@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "在此繼續",
   "ARCHIVE$OTHER_ENVIRONMENT": "來自你的另一個環境",
   "ARCHIVE$NO_EVENTS": "尚無儲存的訊息。在執行它的環境中開啟一次即可儲存紀錄。",
-  "ARCHIVE$LOADING": "正在載入儲存的紀錄…"
+  "ARCHIVE$LOADING": "正在載入儲存的紀錄…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "在你的另一個環境中",
+  "AUTOMATION_SYNC$HELP": "這些在建立它們的環境中執行。複製到這裡即可在此執行；複製後預設關閉，避免重複執行。",
+  "AUTOMATION_SYNC$COPY_HERE": "複製到這裡",
+  "AUTOMATION_SYNC$ON": "開啟",
+  "AUTOMATION_SYNC$OFF": "關閉"
 }

@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "Продовжити тут",
   "ARCHIVE$OTHER_ENVIRONMENT": "З іншого середовища",
   "ARCHIVE$NO_EVENTS": "Збережених повідомлень ще немає. Відкрийте чат там, де він виконувався, щоб зберегти його.",
-  "ARCHIVE$LOADING": "Завантаження збереженої стенограми…"
+  "ARCHIVE$LOADING": "Завантаження збереженої стенограми…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "В іншому середовищі",
+  "AUTOMATION_SYNC$HELP": "Вони працюють там, де їх створено. Скопіюйте сюди, щоб запускати тут; копія вимкнена, щоб не запускатися двічі.",
+  "AUTOMATION_SYNC$COPY_HERE": "Копіювати сюди",
+  "AUTOMATION_SYNC$ON": "Увімкнено",
+  "AUTOMATION_SYNC$OFF": "Вимкнено"
 }

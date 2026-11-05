@@ -21,6 +21,7 @@ export const CLOUD_SYNCED_KEYS = [
   "archived-conversations",
   "home-store",
   "openhands-kt-tutorial-scripts",
+  "neodevex_workspace_memory_v1",
 ] as const;
 
 const TABLE = "user_app_state";
@@ -55,7 +56,12 @@ function isRecordOfObjects(value: unknown): value is Record<string, Json> {
 }
 
 function stamp(entry: Json): string {
-  const at = entry.updatedAt ?? entry.updated_at ?? entry.lastUpdated;
+  const at =
+    entry.updatedAt ??
+    entry.updated_at ??
+    entry.lastUpdated ??
+    entry.supersededAt ??
+    entry.createdAt;
   return typeof at === "string" ? at : "";
 }
 
@@ -111,6 +117,22 @@ function mergeState(
         base[fieldPath],
         preferRemote,
       );
+    } else if (
+      Array.isArray(l) &&
+      Array.isArray(r) &&
+      [...l, ...r].every(
+        (item) => isPlainObject(item) && typeof item.id === "string",
+      )
+    ) {
+      // Lists of records with ids (workspace memory): one entry per id, the
+      // newer copy wins, order of first appearance kept.
+      const byId = new Map<string, Json>();
+      for (const item of [...l, ...r] as Json[]) {
+        const id = item.id as string;
+        const seen = byId.get(id);
+        if (!seen || stamp(item) > stamp(seen)) byId.set(id, item);
+      }
+      result[field] = [...byId.values()];
     } else if (Array.isArray(l) && Array.isArray(r)) {
       const seen = new Set<string>();
       result[field] = [...l, ...r].filter((item) => {

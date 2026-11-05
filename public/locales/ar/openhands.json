@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "المتابعة هنا",
   "ARCHIVE$OTHER_ENVIRONMENT": "من بيئتك الأخرى",
   "ARCHIVE$NO_EVENTS": "لا توجد رسائل محفوظة بعد. افتح المحادثة مرة واحدة حيث تم تشغيلها لحفظ نصها.",
-  "ARCHIVE$LOADING": "جارٍ تحميل النص المحفوظ…"
+  "ARCHIVE$LOADING": "جارٍ تحميل النص المحفوظ…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "في بيئتك الأخرى",
+  "AUTOMATION_SYNC$HELP": "تعمل هذه حيث أُنشئت. انسخ واحدة هنا لتشغيلها هنا؛ تصل متوقفة حتى لا تعمل مرتين.",
+  "AUTOMATION_SYNC$COPY_HERE": "نسخ هنا",
+  "AUTOMATION_SYNC$ON": "قيد التشغيل",
+  "AUTOMATION_SYNC$OFF": "متوقفة"
 }

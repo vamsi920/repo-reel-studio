@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "Continuer ici",
   "ARCHIVE$OTHER_ENVIRONMENT": "De votre autre environnement",
   "ARCHIVE$NO_EVENTS": "Aucun message enregistré. Ouvrez la conversation une fois là où elle s'est déroulée pour l'enregistrer.",
-  "ARCHIVE$LOADING": "Chargement de la transcription enregistrée…"
+  "ARCHIVE$LOADING": "Chargement de la transcription enregistrée…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "Dans votre autre environnement",
+  "AUTOMATION_SYNC$HELP": "Elles s'exécutent là où elles ont été créées. Copiez-en une ici pour l'exécuter ici ; elle arrive désactivée pour ne jamais s'exécuter deux fois.",
+  "AUTOMATION_SYNC$COPY_HERE": "Copier ici",
+  "AUTOMATION_SYNC$ON": "Activée",
+  "AUTOMATION_SYNC$OFF": "Désactivée"
 }

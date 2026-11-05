@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
   useMemo,
   useCallback,
@@ -77,6 +78,8 @@ import { MANIFEST_ICON_BY_SLUG } from "#/components/features/manifest/manifest-i
 import { ManifestOverviewTiles } from "#/components/features/manifest/manifest-overview-tiles";
 import { ManifestSubpageLayout } from "#/components/features/manifest/manifest-subpage-layout";
 import { cn, downloadBlob } from "#/utils/utils";
+import { OtherEnvironmentAutomations } from "#/components/features/automations/other-environment-automations";
+import { indexAutomations } from "#/lib/data-platform/automation-index";
 
 const PAGE_SIZE = 50;
 
@@ -137,6 +140,10 @@ export default function AutomationsList() {
     offset: 0,
     enabled: isBackendHealthy,
   });
+  // Lets the user's other environments list (and copy) these automations.
+  useEffect(() => {
+    if (data?.automations) indexAutomations(data.automations).catch(() => {});
+  }, [data]);
   // One runs query per listed automation — dashboard mode only.
   const runSummaries = useAutomationRunSummaries(data?.automations ?? [], {
     enabled: isBackendHealthy && dashboard !== null,
@@ -664,6 +671,10 @@ export default function AutomationsList() {
           automation sat one unmarked tab away. The templates sub-page is still
           the full browse surface; this is the same launcher, shown where
           people actually land. */}
+      <div className="mt-6">
+        <OtherEnvironmentAutomations />
+      </div>
+
       <div className="mt-6">
         <RecommendedAutomationsLauncher query={searchQuery} />
       </div>

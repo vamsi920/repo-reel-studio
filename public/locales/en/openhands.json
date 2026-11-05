@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "Continue here",
   "ARCHIVE$OTHER_ENVIRONMENT": "From your other environment",
   "ARCHIVE$NO_EVENTS": "No saved messages yet. Open the chat once where it ran to save its transcript.",
-  "ARCHIVE$LOADING": "Loading saved transcript…"
+  "ARCHIVE$LOADING": "Loading saved transcript…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "On your other environment",
+  "AUTOMATION_SYNC$HELP": "These run where they were created. Copy one here to run it here instead; it arrives turned off so it never runs twice.",
+  "AUTOMATION_SYNC$COPY_HERE": "Copy here",
+  "AUTOMATION_SYNC$ON": "On",
+  "AUTOMATION_SYNC$OFF": "Off"
 }

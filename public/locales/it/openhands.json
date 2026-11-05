@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "Continua qui",
   "ARCHIVE$OTHER_ENVIRONMENT": "Dall'altro ambiente",
   "ARCHIVE$NO_EVENTS": "Nessun messaggio salvato. Apri la chat una volta dove è stata eseguita per salvarla.",
-  "ARCHIVE$LOADING": "Caricamento della trascrizione salvata…"
+  "ARCHIVE$LOADING": "Caricamento della trascrizione salvata…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "Nell'altro ambiente",
+  "AUTOMATION_SYNC$HELP": "Vengono eseguite dove sono state create. Copiane una qui per eseguirla qui; arriva disattivata così non viene mai eseguita due volte.",
+  "AUTOMATION_SYNC$COPY_HERE": "Copia qui",
+  "AUTOMATION_SYNC$ON": "Attiva",
+  "AUTOMATION_SYNC$OFF": "Disattivata"
 }

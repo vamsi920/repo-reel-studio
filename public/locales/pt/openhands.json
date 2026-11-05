@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "Continuar aqui",
   "ARCHIVE$OTHER_ENVIRONMENT": "Do seu outro ambiente",
   "ARCHIVE$NO_EVENTS": "Nenhuma mensagem salva ainda. Abra a conversa uma vez onde ela foi executada para salvá-la.",
-  "ARCHIVE$LOADING": "Carregando a transcrição salva…"
+  "ARCHIVE$LOADING": "Carregando a transcrição salva…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "No seu outro ambiente",
+  "AUTOMATION_SYNC$HELP": "Elas rodam onde foram criadas. Copie uma para cá para rodá-la aqui; ela chega desligada para nunca rodar duas vezes.",
+  "AUTOMATION_SYNC$COPY_HERE": "Copiar para cá",
+  "AUTOMATION_SYNC$ON": "Ligada",
+  "AUTOMATION_SYNC$OFF": "Desligada"
 }

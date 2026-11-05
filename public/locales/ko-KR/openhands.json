@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "여기서 계속",
   "ARCHIVE$OTHER_ENVIRONMENT": "다른 환경에서",
   "ARCHIVE$NO_EVENTS": "저장된 메시지가 아직 없습니다. 실행된 환경에서 채팅을 한 번 열면 저장됩니다.",
-  "ARCHIVE$LOADING": "저장된 기록을 불러오는 중…"
+  "ARCHIVE$LOADING": "저장된 기록을 불러오는 중…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "다른 환경에 있음",
+  "AUTOMATION_SYNC$HELP": "생성된 환경에서 실행됩니다. 여기서 실행하려면 복사하세요. 두 번 실행되지 않도록 꺼진 상태로 추가됩니다.",
+  "AUTOMATION_SYNC$COPY_HERE": "여기로 복사",
+  "AUTOMATION_SYNC$ON": "켜짐",
+  "AUTOMATION_SYNC$OFF": "꺼짐"
 }

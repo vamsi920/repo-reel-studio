@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "Burada devam et",
   "ARCHIVE$OTHER_ENVIRONMENT": "Diğer ortamından",
   "ARCHIVE$NO_EVENTS": "Henüz kaydedilmiş mesaj yok. Kaydetmek için sohbeti çalıştığı yerde bir kez aç.",
-  "ARCHIVE$LOADING": "Kaydedilmiş döküm yükleniyor…"
+  "ARCHIVE$LOADING": "Kaydedilmiş döküm yükleniyor…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "Diğer ortamında",
+  "AUTOMATION_SYNC$HELP": "Bunlar oluşturuldukları yerde çalışır. Burada çalıştırmak için birini kopyala; iki kez çalışmasın diye kapalı gelir.",
+  "AUTOMATION_SYNC$COPY_HERE": "Buraya kopyala",
+  "AUTOMATION_SYNC$ON": "Açık",
+  "AUTOMATION_SYNC$OFF": "Kapalı"
 }

@@ -55,6 +55,28 @@ describe("cloud state merge", () => {
     expect(Object.keys(merged.state.projects)).toEqual(["a"]);
   });
 
+  it("merges lists of records by id, keeping the newer copy (workspace memory)", () => {
+    const merged = mergeSyncedValue(
+      {
+        ws1: [
+          { id: "m1", createdAt: "1", supersededAt: null },
+          { id: "m2", createdAt: "1", supersededAt: null },
+        ],
+      },
+      {
+        ws1: [
+          { id: "m1", createdAt: "1", supersededAt: "2" },
+          { id: "m3", createdAt: "3", supersededAt: null },
+        ],
+      },
+      {},
+      true,
+    ) as Record<string, Array<{ id: string; supersededAt: string | null }>>;
+
+    expect(merged.ws1.map((r) => r.id)).toEqual(["m1", "m2", "m3"]);
+    expect(merged.ws1[0].supersededAt).toBe("2");
+  });
+
   it("merges plain records such as conversation metadata", () => {
     const merged = mergeSyncedValue(
       { "conv-1": { selected_repository: "acme/app" } },

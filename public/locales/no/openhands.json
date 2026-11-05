@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "Fortsett her",
   "ARCHIVE$OTHER_ENVIRONMENT": "Fra det andre miljøet ditt",
   "ARCHIVE$NO_EVENTS": "Ingen lagrede meldinger ennå. Åpne chatten én gang der den kjørte for å lagre den.",
-  "ARCHIVE$LOADING": "Laster lagret transkripsjon…"
+  "ARCHIVE$LOADING": "Laster lagret transkripsjon…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "I det andre miljøet ditt",
+  "AUTOMATION_SYNC$HELP": "Disse kjører der de ble opprettet. Kopier en hit for å kjøre den her; den kommer avslått så den aldri kjører to ganger.",
+  "AUTOMATION_SYNC$COPY_HERE": "Kopier hit",
+  "AUTOMATION_SYNC$ON": "På",
+  "AUTOMATION_SYNC$OFF": "Av"
 }

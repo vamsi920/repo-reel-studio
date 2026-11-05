@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "ここで続行",
   "ARCHIVE$OTHER_ENVIRONMENT": "別の環境から",
   "ARCHIVE$NO_EVENTS": "保存されたメッセージはまだありません。実行した環境で一度チャットを開くと保存されます。",
-  "ARCHIVE$LOADING": "保存されたトランスクリプトを読み込み中…"
+  "ARCHIVE$LOADING": "保存されたトランスクリプトを読み込み中…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "別の環境",
+  "AUTOMATION_SYNC$HELP": "これらは作成された環境で実行されます。ここで実行するにはコピーしてください。二重実行を防ぐためオフの状態で追加されます。",
+  "AUTOMATION_SYNC$COPY_HERE": "ここにコピー",
+  "AUTOMATION_SYNC$ON": "オン",
+  "AUTOMATION_SYNC$OFF": "オフ"
 }

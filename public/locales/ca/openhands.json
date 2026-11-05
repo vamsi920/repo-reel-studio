@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "Continua aquí",
   "ARCHIVE$OTHER_ENVIRONMENT": "De l'altre entorn",
   "ARCHIVE$NO_EVENTS": "Encara no hi ha missatges desats. Obre el xat un cop on es va executar per desar-lo.",
-  "ARCHIVE$LOADING": "S'està carregant la transcripció desada…"
+  "ARCHIVE$LOADING": "S'està carregant la transcripció desada…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "A l'altre entorn",
+  "AUTOMATION_SYNC$HELP": "S'executen on es van crear. Copia'n una aquí per executar-la aquí; arriba desactivada perquè no s'executi mai dues vegades.",
+  "AUTOMATION_SYNC$COPY_HERE": "Copia aquí",
+  "AUTOMATION_SYNC$ON": "Activada",
+  "AUTOMATION_SYNC$OFF": "Desactivada"
 }

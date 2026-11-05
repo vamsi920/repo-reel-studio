@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "Hier fortsetzen",
   "ARCHIVE$OTHER_ENVIRONMENT": "Aus deiner anderen Umgebung",
   "ARCHIVE$NO_EVENTS": "Noch keine gespeicherten Nachrichten. Öffne den Chat einmal dort, wo er lief, um ihn zu speichern.",
-  "ARCHIVE$LOADING": "Gespeichertes Protokoll wird geladen…"
+  "ARCHIVE$LOADING": "Gespeichertes Protokoll wird geladen…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "In deiner anderen Umgebung",
+  "AUTOMATION_SYNC$HELP": "Diese laufen dort, wo sie erstellt wurden. Kopiere eine hierher, um sie hier auszuführen; sie kommt ausgeschaltet an, damit sie nie doppelt läuft.",
+  "AUTOMATION_SYNC$COPY_HERE": "Hierher kopieren",
+  "AUTOMATION_SYNC$ON": "An",
+  "AUTOMATION_SYNC$OFF": "Aus"
 }

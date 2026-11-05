@@ -4262,5 +4262,10 @@
   "ARCHIVE$CONTINUE_HERE": "Continuar aquí",
   "ARCHIVE$OTHER_ENVIRONMENT": "De tu otro entorno",
   "ARCHIVE$NO_EVENTS": "Aún no hay mensajes guardados. Abre el chat una vez donde se ejecutó para guardarlo.",
-  "ARCHIVE$LOADING": "Cargando la transcripción guardada…"
+  "ARCHIVE$LOADING": "Cargando la transcripción guardada…",
+  "AUTOMATION_SYNC$OTHER_ENVIRONMENT": "En tu otro entorno",
+  "AUTOMATION_SYNC$HELP": "Se ejecutan donde se crearon. Copia una aquí para ejecutarla aquí; llega desactivada para que nunca se ejecute dos veces.",
+  "AUTOMATION_SYNC$COPY_HERE": "Copiar aquí",
+  "AUTOMATION_SYNC$ON": "Activada",
+  "AUTOMATION_SYNC$OFF": "Desactivada"
 }
