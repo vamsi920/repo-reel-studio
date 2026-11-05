@@ -46,6 +46,25 @@ set -uo pipefail
 log() { printf '[agent-canvas] %s\n' "$*"; }
 log_error() { printf '[agent-canvas] ERROR: %s\n' "$*" >&2; }
 
+# ── Volume ownership, then drop to the openhands user ───────────────────────
+# Hosts that mount a fresh volume over ~/.openhands (Fly volumes, some
+# `docker run -v` setups) mount it root-owned, so the openhands user could not
+# write settings, conversations or the automation DB, and everything lived on
+# the container's throwaway disk instead. The image starts as root only to fix
+# ownership of the persistence directories, then re-runs this script as
+# openhands with the same environment.
+if [ "$(id -u)" = "0" ]; then
+  APP_HOME=/home/openhands
+  mkdir -p "${APP_HOME}/.openhands"
+  # Only a root-owned mount (a fresh volume) is taken over; a folder the user
+  # bind-mounted from their own machine keeps its ownership.
+  if [ "$(stat -c %u "${APP_HOME}/.openhands")" = "0" ]; then
+    chown -R openhands:openhands "${APP_HOME}/.openhands"
+  fi
+  export HOME="${APP_HOME}" USER=openhands LOGNAME=openhands
+  exec setpriv --reuid=openhands --regid=openhands --init-groups -- "$0" "$@"
+fi
+
 # ── Load centralized defaults (generated from config/defaults.json at build) ─
 # shellcheck source=/dev/null
 if [ -f /opt/agent-canvas/defaults.env ]; then

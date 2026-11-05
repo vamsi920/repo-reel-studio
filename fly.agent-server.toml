@@ -37,6 +37,15 @@ primary_region = "iad"
   # ever reach.
   AUTOMATION_BASE_URL = "https://neo-agent-server.fly.dev"
 
+# Settings, LLM profiles, secrets, conversations, the automation DB and the
+# session/secret keys all live under ~/.openhands. Without a volume every
+# deploy or machine restart started the app with an empty disk: chats gone,
+# automations gone, GITHUB_TOKEN gone. One machine, one volume.
+[mounts]
+  source = "neo_agent_data"
+  destination = "/home/openhands/.openhands"
+  initial_size = "10gb"
+
 [http_service]
   internal_port = 8000
   force_https = true

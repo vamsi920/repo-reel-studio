@@ -204,7 +204,10 @@ RUN mkdir -p /home/openhands/.openhands/agent-canvas/conversations \
              /projects && \
     chown -R openhands:openhands /home/openhands/.openhands /projects
 
-USER openhands
+# The entrypoint starts as root only to fix ownership of a mounted volume,
+# then drops to openhands with setpriv (util-linux); fail the build early if
+# the base image ever stops shipping it.
+RUN command -v setpriv >/dev/null
 
 # Persistence volumes:
 #   /home/openhands/.openhands — settings, secrets, conversations, automation DB
