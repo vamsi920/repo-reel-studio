@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "테스트 수정",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "실패는 테스트 문제(잘못된 기대값, 불안정한 설정)이며 애플리케이션은 그대로 둡니다.",
   "TESTING$TRIAGE_FINDINGS_ONLY": "발견 사항으로만 기록",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "코드 변경 없음. 모든 실패는 발견 사항이 되고 리포트의 게이트는 빨간색으로 남습니다."
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "코드 변경 없음. 모든 실패는 발견 사항이 되고 리포트의 게이트는 빨간색으로 남습니다.",
+  "ARCHIVE$RAN_LOCALLY": "내 컴퓨터에서 실행됨",
+  "ARCHIVE$RAN_IN_CLOUD": "클라우드에서 실행됨",
+  "ARCHIVE$READ_ONLY_NOTE": "이 채팅은 다른 환경에서 실행되었습니다. 저장된 기록을 보고 있습니다.",
+  "ARCHIVE$CONTINUE_HERE": "여기서 계속",
+  "ARCHIVE$OTHER_ENVIRONMENT": "다른 환경에서",
+  "ARCHIVE$NO_EVENTS": "저장된 메시지가 아직 없습니다. 실행된 환경에서 채팅을 한 번 열면 저장됩니다.",
+  "ARCHIVE$LOADING": "저장된 기록을 불러오는 중…"
 }

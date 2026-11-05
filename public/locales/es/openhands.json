@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "Arreglar las pruebas",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "Los fallos son problemas de las pruebas (expectativa errónea, setup inestable); la aplicación queda como está.",
   "TESTING$TRIAGE_FINDINGS_ONLY": "Registrar solo como hallazgos",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Sin cambios de código; cada fallo se convierte en hallazgo y la gate queda en rojo en el informe."
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Sin cambios de código; cada fallo se convierte en hallazgo y la gate queda en rojo en el informe.",
+  "ARCHIVE$RAN_LOCALLY": "Ejecutado en tu equipo",
+  "ARCHIVE$RAN_IN_CLOUD": "Ejecutado en la nube",
+  "ARCHIVE$READ_ONLY_NOTE": "Este chat se ejecutó en tu otro entorno. Estás viendo su transcripción guardada.",
+  "ARCHIVE$CONTINUE_HERE": "Continuar aquí",
+  "ARCHIVE$OTHER_ENVIRONMENT": "De tu otro entorno",
+  "ARCHIVE$NO_EVENTS": "Aún no hay mensajes guardados. Abre el chat una vez donde se ejecutó para guardarlo.",
+  "ARCHIVE$LOADING": "Cargando la transcripción guardada…"
 }

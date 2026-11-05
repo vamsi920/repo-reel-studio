@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "テストを修正",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "失敗はテスト側の問題（誤った期待値、不安定なセットアップ）で、アプリケーションはそのままにします。",
   "TESTING$TRIAGE_FINDINGS_ONLY": "所見として記録のみ",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "コードは変更せず、すべての失敗を所見にし、レポートではゲートを赤のままにします。"
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "コードは変更せず、すべての失敗を所見にし、レポートではゲートを赤のままにします。",
+  "ARCHIVE$RAN_LOCALLY": "お使いのコンピューターで実行",
+  "ARCHIVE$RAN_IN_CLOUD": "クラウドで実行",
+  "ARCHIVE$READ_ONLY_NOTE": "このチャットは別の環境で実行されました。保存されたトランスクリプトを表示しています。",
+  "ARCHIVE$CONTINUE_HERE": "ここで続行",
+  "ARCHIVE$OTHER_ENVIRONMENT": "別の環境から",
+  "ARCHIVE$NO_EVENTS": "保存されたメッセージはまだありません。実行した環境で一度チャットを開くと保存されます。",
+  "ARCHIVE$LOADING": "保存されたトランスクリプトを読み込み中…"
 }

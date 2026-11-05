@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "Arregla les proves",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "Les fallades són problemes de les proves (expectativa errònia, setup inestable); l'aplicació queda com està.",
   "TESTING$TRIAGE_FINDINGS_ONLY": "Registra només com a troballes",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Sense canvis de codi; cada fallada esdevé una troballa i la gate queda en vermell a l'informe."
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Sense canvis de codi; cada fallada esdevé una troballa i la gate queda en vermell a l'informe.",
+  "ARCHIVE$RAN_LOCALLY": "Executat al teu ordinador",
+  "ARCHIVE$RAN_IN_CLOUD": "Executat al núvol",
+  "ARCHIVE$READ_ONLY_NOTE": "Aquest xat es va executar a l'altre entorn. Estàs veient la transcripció desada.",
+  "ARCHIVE$CONTINUE_HERE": "Continua aquí",
+  "ARCHIVE$OTHER_ENVIRONMENT": "De l'altre entorn",
+  "ARCHIVE$NO_EVENTS": "Encara no hi ha missatges desats. Obre el xat un cop on es va executar per desar-lo.",
+  "ARCHIVE$LOADING": "S'està carregant la transcripció desada…"
 }

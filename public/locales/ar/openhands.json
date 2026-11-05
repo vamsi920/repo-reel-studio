@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "إصلاح الاختبارات",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "الإخفاقات مشاكل في الاختبارات (توقع خاطئ، إعداد متقلب)؛ يبقى التطبيق كما هو.",
   "TESTING$TRIAGE_FINDINGS_ONLY": "تسجيلها كنتائج فقط",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "لا تغييرات في الشيفرة؛ يصبح كل إخفاق نتيجة وتبقى البوابة حمراء في التقرير."
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "لا تغييرات في الشيفرة؛ يصبح كل إخفاق نتيجة وتبقى البوابة حمراء في التقرير.",
+  "ARCHIVE$RAN_LOCALLY": "تم التشغيل على جهازك",
+  "ARCHIVE$RAN_IN_CLOUD": "تم التشغيل في السحابة",
+  "ARCHIVE$READ_ONLY_NOTE": "تم تشغيل هذه المحادثة في بيئتك الأخرى. أنت تعرض النص المحفوظ لها.",
+  "ARCHIVE$CONTINUE_HERE": "المتابعة هنا",
+  "ARCHIVE$OTHER_ENVIRONMENT": "من بيئتك الأخرى",
+  "ARCHIVE$NO_EVENTS": "لا توجد رسائل محفوظة بعد. افتح المحادثة مرة واحدة حيث تم تشغيلها لحفظ نصها.",
+  "ARCHIVE$LOADING": "جارٍ تحميل النص المحفوظ…"
 }

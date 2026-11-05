@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "Testleri düzelt",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "Hatalar test sorunları (yanlış beklenti, kararsız kurulum); uygulama olduğu gibi kalır.",
   "TESTING$TRIAGE_FINDINGS_ONLY": "Yalnızca bulgu olarak kaydet",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Kod değişikliği yok; her hata bir bulgu olur ve kapı raporda kırmızı kalır."
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Kod değişikliği yok; her hata bir bulgu olur ve kapı raporda kırmızı kalır.",
+  "ARCHIVE$RAN_LOCALLY": "Bilgisayarında çalıştı",
+  "ARCHIVE$RAN_IN_CLOUD": "Bulutta çalıştı",
+  "ARCHIVE$READ_ONLY_NOTE": "Bu sohbet diğer ortamında çalıştı. Kaydedilmiş dökümünü görüntülüyorsun.",
+  "ARCHIVE$CONTINUE_HERE": "Burada devam et",
+  "ARCHIVE$OTHER_ENVIRONMENT": "Diğer ortamından",
+  "ARCHIVE$NO_EVENTS": "Henüz kaydedilmiş mesaj yok. Kaydetmek için sohbeti çalıştığı yerde bir kez aç.",
+  "ARCHIVE$LOADING": "Kaydedilmiş döküm yükleniyor…"
 }

@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "Corriger les tests",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "Les échecs sont des problèmes de test (mauvaise attente, setup instable) ; l'application reste telle quelle.",
   "TESTING$TRIAGE_FINDINGS_ONLY": "Enregistrer comme constats seulement",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Aucun changement de code ; chaque échec devient un constat et le gate reste rouge dans le rapport."
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Aucun changement de code ; chaque échec devient un constat et le gate reste rouge dans le rapport.",
+  "ARCHIVE$RAN_LOCALLY": "Exécuté sur votre ordinateur",
+  "ARCHIVE$RAN_IN_CLOUD": "Exécuté dans le cloud",
+  "ARCHIVE$READ_ONLY_NOTE": "Cette conversation s'est déroulée dans votre autre environnement. Vous consultez sa transcription enregistrée.",
+  "ARCHIVE$CONTINUE_HERE": "Continuer ici",
+  "ARCHIVE$OTHER_ENVIRONMENT": "De votre autre environnement",
+  "ARCHIVE$NO_EVENTS": "Aucun message enregistré. Ouvrez la conversation une fois là où elle s'est déroulée pour l'enregistrer.",
+  "ARCHIVE$LOADING": "Chargement de la transcription enregistrée…"
 }

@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "Corrigir os testes",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "As falhas são problemas dos testes (expectativa errada, setup instável); a aplicação fica como está.",
   "TESTING$TRIAGE_FINDINGS_ONLY": "Registar apenas como achados",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Sem alterações de código; cada falha vira um achado e a gate fica vermelha no relatório."
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Sem alterações de código; cada falha vira um achado e a gate fica vermelha no relatório.",
+  "ARCHIVE$RAN_LOCALLY": "Executado no seu computador",
+  "ARCHIVE$RAN_IN_CLOUD": "Executado na nuvem",
+  "ARCHIVE$READ_ONLY_NOTE": "Esta conversa foi executada no seu outro ambiente. Você está vendo a transcrição salva.",
+  "ARCHIVE$CONTINUE_HERE": "Continuar aqui",
+  "ARCHIVE$OTHER_ENVIRONMENT": "Do seu outro ambiente",
+  "ARCHIVE$NO_EVENTS": "Nenhuma mensagem salva ainda. Abra a conversa uma vez onde ela foi executada para salvá-la.",
+  "ARCHIVE$LOADING": "Carregando a transcrição salva…"
 }

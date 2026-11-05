@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "Correggi i test",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "I fallimenti sono problemi dei test (aspettativa errata, setup instabile); l'applicazione resta com'è.",
   "TESTING$TRIAGE_FINDINGS_ONLY": "Registra solo come rilievi",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Nessuna modifica al codice; ogni fallimento diventa un rilievo e il gate resta rosso nel report."
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Nessuna modifica al codice; ogni fallimento diventa un rilievo e il gate resta rosso nel report.",
+  "ARCHIVE$RAN_LOCALLY": "Eseguita sul tuo computer",
+  "ARCHIVE$RAN_IN_CLOUD": "Eseguita nel cloud",
+  "ARCHIVE$READ_ONLY_NOTE": "Questa chat è stata eseguita nell'altro ambiente. Stai vedendo la trascrizione salvata.",
+  "ARCHIVE$CONTINUE_HERE": "Continua qui",
+  "ARCHIVE$OTHER_ENVIRONMENT": "Dall'altro ambiente",
+  "ARCHIVE$NO_EVENTS": "Nessun messaggio salvato. Apri la chat una volta dove è stata eseguita per salvarla.",
+  "ARCHIVE$LOADING": "Caricamento della trascrizione salvata…"
 }

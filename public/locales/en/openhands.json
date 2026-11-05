@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "Fix the tests",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "The failures are test problems (wrong expectation, flaky setup); the application stays as it is.",
   "TESTING$TRIAGE_FINDINGS_ONLY": "Record as findings only",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "No code changes; every failure becomes a finding and the gate stays red in the report."
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "No code changes; every failure becomes a finding and the gate stays red in the report.",
+  "ARCHIVE$RAN_LOCALLY": "Ran on your computer",
+  "ARCHIVE$RAN_IN_CLOUD": "Ran in the cloud",
+  "ARCHIVE$READ_ONLY_NOTE": "This chat ran in your other environment. You are viewing its saved transcript.",
+  "ARCHIVE$CONTINUE_HERE": "Continue here",
+  "ARCHIVE$OTHER_ENVIRONMENT": "From your other environment",
+  "ARCHIVE$NO_EVENTS": "No saved messages yet. Open the chat once where it ran to save its transcript.",
+  "ARCHIVE$LOADING": "Loading saved transcript…"
 }

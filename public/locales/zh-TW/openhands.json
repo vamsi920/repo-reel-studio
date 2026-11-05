@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "修復測試",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "失敗是測試問題（預期錯誤、設定不穩定）；應用程式保持不變。",
   "TESTING$TRIAGE_FINDINGS_ONLY": "僅記錄為發現",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "不改程式碼；每個失敗都成為發現，報告中閘門保持紅色。"
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "不改程式碼；每個失敗都成為發現，報告中閘門保持紅色。",
+  "ARCHIVE$RAN_LOCALLY": "在你的電腦上執行",
+  "ARCHIVE$RAN_IN_CLOUD": "在雲端執行",
+  "ARCHIVE$READ_ONLY_NOTE": "此對話在你的另一個環境中執行。你正在檢視其儲存的紀錄。",
+  "ARCHIVE$CONTINUE_HERE": "在此繼續",
+  "ARCHIVE$OTHER_ENVIRONMENT": "來自你的另一個環境",
+  "ARCHIVE$NO_EVENTS": "尚無儲存的訊息。在執行它的環境中開啟一次即可儲存紀錄。",
+  "ARCHIVE$LOADING": "正在載入儲存的紀錄…"
 }

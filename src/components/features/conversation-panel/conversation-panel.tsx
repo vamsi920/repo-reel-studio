@@ -28,6 +28,7 @@ import { ConversationCard } from "./conversation-card/conversation-card";
 import { ConversationCardPreview } from "./conversation-card/conversation-card-preview";
 import { StartTaskCard } from "./start-task-card/start-task-card";
 import { ConversationCardSkeleton } from "./conversation-card/conversation-card-skeleton";
+import { OtherEnvironmentConversations } from "./other-environment-conversations";
 import { CompactConversationRow } from "./compact-conversation-row";
 import { useConversationPanelPreferencesStore } from "#/stores/conversation-panel-preferences-store";
 import { cn } from "#/utils/utils";
@@ -1193,6 +1194,8 @@ export function ConversationPanel({
               </button>
             </div>
           ))}
+
+        {!compact && <OtherEnvironmentConversations onNavigate={onClose} />}
       </div>
 
       {confirmDeleteModalVisible && (

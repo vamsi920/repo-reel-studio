@@ -19,6 +19,10 @@ export default [
         "conversations/:conversationId/panel",
         "routes/conversation-panel.tsx",
       ),
+      route(
+        "conversations/archived/:conversationId",
+        "routes/archived-conversation.tsx",
+      ),
       route("conversations/:conversationId", "routes/conversation.tsx"),
       route("launch", "routes/launch.tsx"),
       route("customize", "routes/extensions-hub.tsx"),

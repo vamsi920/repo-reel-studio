@@ -33,6 +33,7 @@ import { useTrackRealUsage } from "#/hooks/use-track-real-usage";
 import { useSupabaseIdentity } from "#/hooks/use-supabase-identity";
 import { useRealUsageRealtime } from "#/hooks/use-real-usage-realtime";
 import { useWorkspaceId } from "#/hooks/use-workspace-id";
+import { getArchivedConversation } from "#/lib/data-platform/conversation-archive";
 
 function AppContent() {
   const { t } = useTranslation("openhands");
@@ -126,8 +127,19 @@ function AppContent() {
       // Clear the per-backend "last selected" slot so the next switch
       // to this backend doesn't try to revisit a stale id.
       clearLastConversationId(active.backend.id, active.orgId);
-      displayErrorToast(t(I18nKey.CONVERSATION$NOT_EXIST_OR_NO_PERMISSION));
-      navigate("/conversations");
+      // A chat that ran in the user's other environment (laptop or
+      // production) opens as its saved transcript instead of an error.
+      const id = conversationId;
+      getArchivedConversation(id ?? "")
+        .then((archived) => {
+          if (archived && id) {
+            navigate(`/conversations/archived/${id}`, { replace: true });
+            return;
+          }
+          displayErrorToast(t(I18nKey.CONVERSATION$NOT_EXIST_OR_NO_PERMISSION));
+          navigate("/conversations");
+        })
+        .catch(() => navigate("/conversations"));
     }
   }, [
     conversation,

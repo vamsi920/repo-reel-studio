@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "Fiks testene",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "Feilene er testproblemer (feil forventning, ustabilt oppsett); applikasjonen forblir som den er.",
   "TESTING$TRIAGE_FINDINGS_ONLY": "Bare registrer som funn",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Ingen kodeendringer; hver feil blir et funn og porten forblir rød i rapporten."
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Ingen kodeendringer; hver feil blir et funn og porten forblir rød i rapporten.",
+  "ARCHIVE$RAN_LOCALLY": "Kjørt på datamaskinen din",
+  "ARCHIVE$RAN_IN_CLOUD": "Kjørt i skyen",
+  "ARCHIVE$READ_ONLY_NOTE": "Denne chatten kjørte i det andre miljøet ditt. Du ser den lagrede transkripsjonen.",
+  "ARCHIVE$CONTINUE_HERE": "Fortsett her",
+  "ARCHIVE$OTHER_ENVIRONMENT": "Fra det andre miljøet ditt",
+  "ARCHIVE$NO_EVENTS": "Ingen lagrede meldinger ennå. Åpne chatten én gang der den kjørte for å lagre den.",
+  "ARCHIVE$LOADING": "Laster lagret transkripsjon…"
 }

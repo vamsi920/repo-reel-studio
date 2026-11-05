@@ -26,6 +26,7 @@ import { ReactRouterNavigationProvider } from "./react-router-navigation-provide
 import { OnboardingHost } from "#/components/features/onboarding";
 import { TutorialHost } from "#/components/features/tutorial";
 import { ConnectionSyncSentinel } from "#/components/features/environment/connection-sync-sentinel";
+import { useConversationArchiveSync } from "#/hooks/use-conversation-archive-sync";
 
 const EnvironmentSwitchOverlay = React.lazy(
   () => import("#/components/features/backends/environment-switch-overlay"),
@@ -103,6 +104,9 @@ export default function MainApp() {
   useEnsureActiveProfile();
   // Mirror the resolved language onto <html lang> for assistive technology.
   useDocumentLanguage();
+  // Chats of this agent-server are indexed and archived per user so the
+  // user's other environments (laptop, production) list and open them.
+  useConversationArchiveSync();
 
   React.useEffect(() => {
     if (settings?.language) {

@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "修复测试",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "失败是测试问题（预期错误、搭建不稳定）；应用保持不变。",
   "TESTING$TRIAGE_FINDINGS_ONLY": "仅记录为发现",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "不改代码；每个失败都成为发现，报告中门禁保持红色。"
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "不改代码；每个失败都成为发现，报告中门禁保持红色。",
+  "ARCHIVE$RAN_LOCALLY": "在你的电脑上运行",
+  "ARCHIVE$RAN_IN_CLOUD": "在云端运行",
+  "ARCHIVE$READ_ONLY_NOTE": "此对话在你的另一个环境中运行。你正在查看其保存的记录。",
+  "ARCHIVE$CONTINUE_HERE": "在此继续",
+  "ARCHIVE$OTHER_ENVIRONMENT": "来自你的另一个环境",
+  "ARCHIVE$NO_EVENTS": "尚无保存的消息。在运行它的环境中打开一次即可保存记录。",
+  "ARCHIVE$LOADING": "正在加载保存的记录…"
 }

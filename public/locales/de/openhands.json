@@ -4255,5 +4255,12 @@
   "TESTING$TRIAGE_FIX_TESTS": "Tests reparieren",
   "TESTING$TRIAGE_FIX_TESTS_DESC": "Die Fehlschläge sind Testprobleme (falsche Erwartung, instabiles Setup); die Anwendung bleibt unverändert.",
   "TESTING$TRIAGE_FINDINGS_ONLY": "Nur als Befunde erfassen",
-  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Keine Codeänderungen; jeder Fehlschlag wird ein Befund und das Gate bleibt im Bericht rot."
+  "TESTING$TRIAGE_FINDINGS_ONLY_DESC": "Keine Codeänderungen; jeder Fehlschlag wird ein Befund und das Gate bleibt im Bericht rot.",
+  "ARCHIVE$RAN_LOCALLY": "Auf deinem Computer ausgeführt",
+  "ARCHIVE$RAN_IN_CLOUD": "In der Cloud ausgeführt",
+  "ARCHIVE$READ_ONLY_NOTE": "Dieser Chat lief in deiner anderen Umgebung. Du siehst das gespeicherte Protokoll.",
+  "ARCHIVE$CONTINUE_HERE": "Hier fortsetzen",
+  "ARCHIVE$OTHER_ENVIRONMENT": "Aus deiner anderen Umgebung",
+  "ARCHIVE$NO_EVENTS": "Noch keine gespeicherten Nachrichten. Öffne den Chat einmal dort, wo er lief, um ihn zu speichern.",
+  "ARCHIVE$LOADING": "Gespeichertes Protokoll wird geladen…"
 }
