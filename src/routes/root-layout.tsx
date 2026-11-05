@@ -27,6 +27,7 @@ import { OnboardingHost } from "#/components/features/onboarding";
 import { TutorialHost } from "#/components/features/tutorial";
 import { ConnectionSyncSentinel } from "#/components/features/environment/connection-sync-sentinel";
 import { useConversationArchiveSync } from "#/hooks/use-conversation-archive-sync";
+import { useLlmProfileSync } from "#/hooks/use-llm-profile-sync";
 
 const EnvironmentSwitchOverlay = React.lazy(
   () => import("#/components/features/backends/environment-switch-overlay"),
@@ -107,6 +108,8 @@ export default function MainApp() {
   // Chats of this agent-server are indexed and archived per user so the
   // user's other environments (laptop, production) list and open them.
   useConversationArchiveSync();
+  // Saved LLM profiles (keys encrypted in the user vault) follow the user.
+  useLlmProfileSync();
 
   React.useEffect(() => {
     if (settings?.language) {

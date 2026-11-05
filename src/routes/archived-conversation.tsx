@@ -56,8 +56,17 @@ export function toTranscript(events: ArchivedEvent[]): TranscriptLine[] {
           text,
         });
     } else if (kind === "ActionEvent") {
-      const text = actionText(payload);
-      if (text) lines.push({ id, who: "tool", text });
+      const action = (payload.action ?? {}) as Record<string, unknown>;
+      // The agent's final answer arrives as a finish action, not a message.
+      if (
+        action.kind === "FinishAction" &&
+        typeof action.message === "string"
+      ) {
+        lines.push({ id, who: "agent", text: action.message });
+      } else {
+        const text = actionText(payload);
+        if (text) lines.push({ id, who: "tool", text });
+      }
     }
   }
   return lines;
