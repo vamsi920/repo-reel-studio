@@ -72,10 +72,18 @@ async function buildLocalGithubCloneInstructions(repository: {
   const identity = await SettingsService.getSettings()
     .then(resolveGitIdentity)
     .catch(() => resolveGitIdentity({}));
+  // The token must never be written into the checkout: a URL like
+  // https://x-access-token:<token>@host lands in .git/config and in command
+  // output, agents push to public repositories, and GitHub revokes leaked
+  // tokens, so the connection "disconnected" a day later. A credential
+  // helper reads the secret from the environment on every fetch/push
+  // instead; an older checkout gets its remote URL cleaned.
+  const remote = `https://${host}/${repository.name}.git`;
+  const helper = `'!f() { echo username=x-access-token; echo "password=$${GITHUB_CLONE_SECRET_NAME}"; }; f'`;
   return (
     CLONE_INSTRUCTION_PREFIX +
-    `if [ -d .git ]; then git fetch origin${checkout} && git pull --ff-only || true; ` +
-    `else git clone https://x-access-token:$${GITHUB_CLONE_SECRET_NAME}@${host}/${repository.name}.git .${checkout}; fi` +
+    `if [ -d .git ]; then git remote set-url origin ${remote} && git config credential.helper ${helper} && git fetch origin${checkout} && git pull --ff-only || true; ` +
+    `else git -c credential.helper=${helper} clone ${remote} .${checkout} && git config credential.helper ${helper}; fi` +
     gitIdentityCommands(identity)
   );
 }
