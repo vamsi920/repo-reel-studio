@@ -135,17 +135,36 @@ export async function refreshIfNeeded(
     };
     if (token.refresh_token) next.refreshToken = token.refresh_token;
 
-    await admin
-      .from("connections")
-      .update({
-        encrypted_credentials: await encryptJson(admin, next),
-        expires_at: token.expires_in
-          ? new Date(Date.now() + token.expires_in * 1000).toISOString()
-          : null,
-        status: "ok",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", connectionId);
+    // The provider has already rotated: the refresh token we sent is spent
+    // (Atlassian), so losing this write strands the connection until the
+    // user re-consents. That is what expired Jira on 2026-10-29: a rotation
+    // with no saved row and the next refresh rejected. Check the result and
+    // retry before giving up.
+    const update = {
+      encrypted_credentials: await encryptJson(admin, next),
+      expires_at: token.expires_in
+        ? new Date(Date.now() + token.expires_in * 1000).toISOString()
+        : null,
+      status: "ok",
+      updated_at: new Date().toISOString(),
+    };
+    let saveError: unknown = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const { error } = await admin
+        .from("connections")
+        .update(update)
+        .eq("id", connectionId);
+      saveError = error;
+      if (!error) break;
+      await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+    }
+    if (saveError) {
+      console.error(
+        "[connection-refresh] rotated token could not be saved",
+        connectionId,
+        saveError,
+      );
+    }
 
     if (connection.org_id) {
       await recordConnectionEvents(admin, [
