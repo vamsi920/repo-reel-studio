@@ -10,6 +10,7 @@ import {
   canRemoveMember,
   consumePostLoginPath,
   invitableRoles,
+  inviteLinkOrigin,
   parseInviteEmails,
   rememberPostLoginPath,
   teamErrorMessageKey,
@@ -109,6 +110,21 @@ describe("invite emails", () => {
     ]);
     // "not-an-email" is a stray word, not an attempt at an address.
     expect(parsed.invalid).toEqual(["bob@"]);
+  });
+
+  it("points a link made in the desktop app's local mode at the hosted app", () => {
+    const local = { origin: "http://localhost:8000", hostname: "localhost" };
+
+    // Nobody else can open this computer's localhost.
+    expect(inviteLinkOrigin(local, true)).toBe("https://neo.neodevex.com");
+    // A developer's own browser on localhost keeps its origin.
+    expect(inviteLinkOrigin(local, false)).toBe("http://localhost:8000");
+    expect(
+      inviteLinkOrigin(
+        { origin: "https://neo.example", hostname: "neo.example" },
+        true,
+      ),
+    ).toBe("https://neo.example");
   });
 
   it("builds a link that survives a token needing escaping", () => {

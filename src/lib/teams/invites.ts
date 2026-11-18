@@ -1,3 +1,6 @@
+import defaults from "../../../config/defaults.json";
+import { isDesktopApp } from "#/utils/utils";
+
 /** Most addresses one invite request accepts (the database enforces it too). */
 export const MAX_INVITE_EMAILS = 50;
 
@@ -52,9 +55,30 @@ export function parseInviteEmails(raw: string): ParsedInviteEmails {
   return { valid, invalid };
 }
 
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * The origin an invitation link should carry. Normally the page's own. The
+ * desktop app in local mode serves its screens from this computer
+ * (`localhost`), an address nobody else can open, so a link made there points
+ * at the hosted app instead -- same database, same invitation.
+ */
+export function inviteLinkOrigin(
+  location: { origin: string; hostname: string } | undefined = typeof window !==
+  "undefined"
+    ? window.location
+    : undefined,
+  desktop: boolean = isDesktopApp(),
+): string {
+  if (!location) return "";
+  if (desktop && LOOPBACK_HOSTS.has(location.hostname)) {
+    return defaults.desktop.remoteAppUrl.replace(/\/+$/, "");
+  }
+  return location.origin;
+}
+
 export function buildInviteLink(token: string, origin?: string): string {
-  const base =
-    origin ?? (typeof window !== "undefined" ? window.location.origin : "");
+  const base = origin ?? inviteLinkOrigin();
   return `${base}${INVITE_ROUTE_PREFIX}${encodeURIComponent(token)}`;
 }
 
