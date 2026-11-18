@@ -14,6 +14,7 @@ import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, afterEach } from "vitest";
+import defaults from "../../config/defaults.json";
 import {
   assertPortsFree,
   buildSafeDevConfig,
@@ -428,6 +429,35 @@ describe("buildAgentServerTelemetryEnv", () => {
     expect(buildAgentServerTelemetryEnv({ VITE_DO_NOT_TRACK: "1" })).toEqual({
       DO_NOT_TRACK: "1",
     });
+  });
+
+  it("pins acp for packages that automation runs install in the agent-server shell", () => {
+    const stateDir = mkdtempSync(path.join(tmpdir(), "oh-uv-constraints-"));
+    try {
+      const env = buildAgentServerEnv(
+        {
+          tmuxTmpDir: "/tmp/tmux",
+          stateDir,
+          conversationsPath: "/tmp/conversations",
+          bashEventsDir: "/tmp/bash-events",
+          vscodePort: 19000,
+          secretKey: "secret",
+          sessionApiKey: "session",
+          backendBaseUrl: "http://127.0.0.1:18000",
+          canvasToolsDir: "/tmp/tools",
+        },
+        { UV_CONSTRAINT: "/etc/company-pins.txt" },
+      );
+
+      const file = path.join(stateDir, "uv-constraints.txt");
+      // A constraint file the user already set still applies.
+      expect(env.UV_CONSTRAINT).toBe(`/etc/company-pins.txt ${file}`);
+      expect(readFileSync(file, "utf-8").trim()).toBe(
+        defaults.constraints.agentClientProtocol,
+      );
+    } finally {
+      rmSync(stateDir, { recursive: true, force: true });
+    }
   });
 
   it("includes telemetry defaults in the full agent-server environment", () => {

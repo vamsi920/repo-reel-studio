@@ -110,6 +110,20 @@ export OH_PERSISTENCE_DIR="${OH_PERSISTENCE_DIR:-${OPENHANDS_DIR}}"
 export OH_CONVERSATIONS_PATH="${OH_CONVERSATIONS_PATH:-${OPENHANDS_DIR}/${CONFIG_CONVERSATIONS:-agent-canvas/conversations}}"
 export OH_BASH_EVENTS_DIR="${OH_BASH_EVENTS_DIR:-${OPENHANDS_DIR}/${CONFIG_BASH_EVENTS:-agent-canvas/bash_events}}"
 
+# Automation runs `uv pip install openhands-sdk` in the agent-server's shell;
+# agent-client-protocol 1.0 removed `acp.helpers`, so an unpinned resolve
+# crashes every run on import. uv applies UV_CONSTRAINT files to every
+# `uv pip install`, and the shell inherits this environment. Only acp is
+# pinned, so a user's own project installs are otherwise unaffected. Same rule
+# as scripts/dev-safe.mjs (prepareRunInstallConstraints).
+if [ -n "${CONFIG_ACP_CONSTRAINT:-}" ]; then
+  UV_CONSTRAINT_FILE="${STATE_DIR}/uv-constraints.txt"
+  if mkdir -p "${STATE_DIR}" 2>/dev/null \
+    && printf '%s\n' "${CONFIG_ACP_CONSTRAINT}" > "${UV_CONSTRAINT_FILE}" 2>/dev/null; then
+    export UV_CONSTRAINT="${UV_CONSTRAINT:+${UV_CONSTRAINT} }${UV_CONSTRAINT_FILE}"
+  fi
+fi
+
 # OH_SECRET_KEY is required for settings/secrets encryption. Without it the
 # agent-server refuses to return encrypted secrets → conversation creation
 # fails with a 503.  Auto-generate and persist (just like the session API key)

@@ -64,6 +64,7 @@ RUN node -e " \
     'CONFIG_CANVAS_BASE_PATH=' + c.paths.canvasBasePath, \
     'CONFIG_POSTHOG_API_KEY=' + c.telemetry.posthogApiKey, \
     'CONFIG_POSTHOG_HOST=' + c.telemetry.posthogHost, \
+    'CONFIG_ACP_CONSTRAINT="' + ((c.constraints || {}).agentClientProtocol || '') + '"', \
   ]; \
   require('fs').writeFileSync('/tmp/defaults.env', lines.join('\n') + '\n'); \
 "

@@ -758,8 +758,44 @@ export function buildAgentServerTelemetryEnv(env = process.env) {
   return result;
 }
 
+/**
+ * Pins for Python packages that agent-run code installs itself. Every
+ * automation run executes a setup script in the agent-server's shell that
+ * does `uv pip install openhands-sdk==<version>`, which resolves the newest
+ * agent-client-protocol; acp 1.0 (2026-11-09) removed `acp.helpers`, so every
+ * run crashed on import and never reported back. uv applies the files listed
+ * in UV_CONSTRAINT to every `uv pip install`, and the agent-server's shell
+ * inherits this process's environment. Only acp is pinned here: a constraint
+ * on anything a user's own project might need (fastapi, say) would leak into
+ * their installs too.
+ */
+export const RUN_INSTALL_CONSTRAINTS = [
+  AGENT_CLIENT_PROTOCOL_CONSTRAINT,
+].filter(Boolean);
+
+/**
+ * Writes the run-install constraints to `<stateDir>/uv-constraints.txt` and
+ * returns the UV_CONSTRAINT value: that file, after any constraint files the
+ * caller already set. Never throws; without a writable state dir runs simply
+ * resolve unpinned, as before.
+ */
+export function prepareRunInstallConstraints(stateDir, env = process.env) {
+  const existing = (env.UV_CONSTRAINT || "").trim();
+  if (RUN_INSTALL_CONSTRAINTS.length === 0) return existing || undefined;
+  const file = path.join(stateDir, "uv-constraints.txt");
+  try {
+    mkdirSync(stateDir, { recursive: true });
+    writeFileSync(file, `${RUN_INSTALL_CONSTRAINTS.join("\n")}\n`);
+  } catch {
+    return existing || undefined;
+  }
+  return existing ? `${existing} ${file}` : file;
+}
+
 export function buildAgentServerEnv(config, env = process.env) {
+  const uvConstraint = prepareRunInstallConstraints(config.stateDir, env);
   return {
+    ...(uvConstraint ? { UV_CONSTRAINT: uvConstraint } : {}),
     ...buildAgentServerTelemetryEnv(env),
     // Force Python to use UTF-8 for all file I/O and streams.
     //
