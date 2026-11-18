@@ -73,6 +73,17 @@ export default [
         route("runbook", "routes/environment-runbook.tsx"),
       ]),
       route("usage", "routes/usage.tsx"),
+      route("team", "routes/team.tsx", [
+        index("routes/team-members.tsx"),
+        route("invitations", "routes/team-invitations.tsx"),
+        route("workspaces", "routes/team-workspaces.tsx"),
+        route("activity", "routes/team-activity.tsx"),
+        route("settings", "routes/team-settings.tsx"),
+      ]),
+      // An invitation link. Inside the signed-in shell: an invitation belongs
+      // to an email address, so there is nothing to show a visitor with no
+      // account (the sign-in gate remembers the link and returns to it).
+      route("invite/:token", "routes/invite.tsx"),
       route("agentops", "routes/agentops.tsx", [
         index("routes/agentops-overview.tsx"),
         route("live", "routes/agentops-live-runs.tsx"),

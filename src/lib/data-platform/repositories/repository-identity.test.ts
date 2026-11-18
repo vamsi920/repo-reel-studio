@@ -37,6 +37,12 @@ function makeFakeClient(config: {
   orgMemberInsert: FakeResult;
   workspaceUpsert: FakeResult;
   workspaceMemberInsert: FakeResult;
+  /**
+   * Answers for `supabase.rpc(name)`. A name with no entry answers
+   * PGRST202 ("no such function"), i.e. a database that predates team
+   * management -- which is what sends the bootstrap down its legacy path.
+   */
+  rpc?: Record<string, FakeResult>;
 }) {
   const calls: string[] = [];
 
@@ -77,6 +83,7 @@ function makeFakeClient(config: {
             else if (table === "org_members") resolve(config.orgMemberInsert);
             else if (table === "workspace_members")
               resolve(config.workspaceMemberInsert);
+            else if (table === "workspaces") resolve(config.workspaceUpsert);
             else resolve(fail("unexpected bare insert"));
           },
         };
@@ -118,6 +125,15 @@ function makeFakeClient(config: {
       },
     },
     from: (table: string) => builderFor(table),
+    rpc: async (name: string) => {
+      calls.push(`rpc.${name}`);
+      return (
+        config.rpc?.[name] ?? {
+          data: null,
+          error: { code: "PGRST202", message: "function not found" },
+        }
+      );
+    },
   };
 
   return { client, calls };
@@ -140,6 +156,7 @@ vi.mock("#/lib/data-platform/client", () => ({
 import {
   ensureWorkspaceAccess,
   resetPersonalOrgBootstrap,
+  resolveActiveTeam,
   resolveOrgId,
 } from "./repository-identity";
 import { resetSupabaseSessionBootstrap } from "#/lib/data-platform/auth-bootstrap";
@@ -185,12 +202,13 @@ describe("ensureWorkspaceAccess", () => {
     expect(calls).toEqual([
       "auth.getSession",
       "auth.signInAnonymously",
+      "rpc.resolve_active_team",
       "org_members.select",
       "org_members.order:created_at:asc",
       "org_members.maybeSingle",
       "orgs.insert",
       "org_members.insert",
-      "workspaces.upsert",
+      "workspaces.insert",
       "workspace_members.insert",
     ]);
   });
@@ -228,7 +246,7 @@ describe("ensureWorkspaceAccess", () => {
 
     expect(await ensureWorkspaceAccess(INPUT)).toBe(false);
     expect(calls).not.toContain("orgs.insert");
-    expect(calls).not.toContain("workspaces.upsert");
+    expect(calls).not.toContain("workspaces.insert");
   });
 
   it("short-circuits when org creation fails, and logs it instead of failing silently", async () => {
@@ -341,5 +359,105 @@ describe("ensureWorkspaceAccess", () => {
     // Single-flight, not a cache: a sign-in that changes `auth.uid()` must
     // not keep resolving the previous user's org.
     expect(countCalls(calls, "org_members.select")).toBe(2);
+  });
+});
+
+describe("team resolution", () => {
+  const BASE = {
+    session: { userId: "user-1" },
+    signInResult: "ok" as const,
+    orgMembership: null,
+    orgInsert: ok(),
+    orgMemberInsert: ok(),
+    workspaceUpsert: ok(),
+    workspaceMemberInsert: ok(),
+  };
+
+  it("uses the team the database resolved and never touches the legacy bootstrap", async () => {
+    const { client, calls } = makeFakeClient({
+      ...BASE,
+      rpc: {
+        resolve_active_team: ok({
+          id: "team-9",
+          name: "Platform",
+          is_personal: false,
+          role: "admin",
+        }),
+      },
+    });
+    clientState.client = client;
+    clientState.isSupabaseConfigured = true;
+
+    expect(await resolveOrgId()).toBe("team-9");
+    expect(await resolveActiveTeam()).toEqual({
+      id: "team-9",
+      name: "Platform",
+      isPersonal: false,
+      role: "admin",
+    });
+    expect(calls).not.toContain("orgs.insert");
+    expect(calls).not.toContain("org_members.select");
+  });
+
+  it("does not create an org when the team lookup itself fails", async () => {
+    const { client, calls } = makeFakeClient({
+      ...BASE,
+      rpc: { resolve_active_team: fail("upstream timeout") },
+    });
+    clientState.client = client;
+    clientState.isSupabaseConfigured = true;
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    expect(await resolveOrgId()).toBeNull();
+    expect(calls).not.toContain("orgs.insert");
+
+    consoleError.mockRestore();
+  });
+
+  it("accepts a teammate's workspace it may not claim but can reach through the team", async () => {
+    const { client } = makeFakeClient({
+      ...BASE,
+      workspaceUpsert: {
+        data: null,
+        error: { code: "23505", message: "duplicate key value" },
+      },
+      workspaceMemberInsert: {
+        data: null,
+        error: { code: "42501", message: "row-level security" },
+      },
+      rpc: {
+        resolve_active_team: ok({ id: "team-9", role: "member" }),
+        is_workspace_member: ok(true),
+      },
+    });
+    clientState.client = client;
+    clientState.isSupabaseConfigured = true;
+
+    expect(await ensureWorkspaceAccess(INPUT)).toBe(true);
+  });
+
+  it("reports failure for a workspace the user cannot reach at all", async () => {
+    const { client } = makeFakeClient({
+      ...BASE,
+      workspaceMemberInsert: {
+        data: null,
+        error: { code: "42501", message: "row-level security" },
+      },
+      rpc: {
+        resolve_active_team: ok({ id: "team-9", role: "member" }),
+        is_workspace_member: ok(false),
+      },
+    });
+    clientState.client = client;
+    clientState.isSupabaseConfigured = true;
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    expect(await ensureWorkspaceAccess(INPUT)).toBe(false);
+
+    consoleError.mockRestore();
   });
 });

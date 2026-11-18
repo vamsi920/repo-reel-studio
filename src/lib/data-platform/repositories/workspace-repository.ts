@@ -1,5 +1,8 @@
 import { supabase, isSupabaseConfigured } from "#/lib/data-platform/client";
 
+/** Postgres unique violation: the workspace row is already there. */
+const WORKSPACE_EXISTS = "23505";
+
 export type WorkspaceRole = "owner" | "admin" | "member" | "viewer";
 
 export interface WorkspaceRow {
@@ -35,12 +38,11 @@ class SupabaseWorkspaceRepository implements WorkspaceRepository {
   }): Promise<{ ok: boolean; error?: string }> {
     if (!isSupabaseConfigured || !supabase) return { ok: true };
     try {
-      // `name` is only included when the caller actually has one. Some
-      // callers (e.g. `resolvePersistenceIds`'s workspace-membership step)
-      // ensure this same row without ever knowing a friendly name; omitting
-      // the key on conflict leaves the row's existing name untouched instead
-      // of an unconditional `name: input.name ?? null` clobbering whatever a
-      // previous caller (e.g. `useSupabaseIdentity`) had already set.
+      // A plain insert, not an upsert. An upsert's conflict branch is an
+      // UPDATE, which only the workspace's admins may run -- so a teammate
+      // opening a workspace someone else already registered was refused
+      // outright. 23505 (the row exists) is the normal "already registered"
+      // answer, whoever registered it.
       const row: Record<string, unknown> = {
         id: input.id,
         org_id: input.orgId,
@@ -48,10 +50,21 @@ class SupabaseWorkspaceRepository implements WorkspaceRepository {
         path: input.path,
       };
       if (input.name !== undefined) row.name = input.name;
-      const { error } = await supabase
-        .from("workspaces")
-        .upsert(row, { onConflict: "id" });
-      if (error) return { ok: false, error: error.message };
+      const { error } = await supabase.from("workspaces").insert(row);
+      if (error && error.code !== WORKSPACE_EXISTS) {
+        return { ok: false, error: error.message };
+      }
+      if (error && input.name !== undefined) {
+        // Keep the friendly name current. Best-effort: row level security
+        // turns this into a no-op for someone who may not rename the
+        // workspace, and a team never changes here (the database keeps a
+        // workspace in the team that created it).
+        await supabase
+          .from("workspaces")
+          .update({ name: input.name })
+          .eq("id", input.id)
+          .is("name", null);
+      }
       return { ok: true };
     } catch (error) {
       return {

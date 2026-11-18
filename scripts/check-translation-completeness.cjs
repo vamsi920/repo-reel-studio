@@ -13,6 +13,8 @@ const path = require("path");
 // protocol/technical terms, placeholder-only format strings). Add a key here
 // only when the English value is genuinely correct for all languages.
 const IDENTICAL_VALUE_ALLOWLIST = new Set([
+  // Example email addresses, the same in every language.
+  "TEAM$INVITE_EMAILS_PLACEHOLDER",
   // Neo ME: the product name, a brand-name format string, and prompts that
   // are sent to the model rather than shown to people.
   "SIDEBAR$NEOME",

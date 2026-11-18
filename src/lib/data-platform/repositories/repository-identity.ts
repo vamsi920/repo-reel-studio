@@ -8,6 +8,9 @@ import {
 
 const PERSONAL_ORG_NAME = "Personal";
 
+/** Postgres: the statement was refused by row level security. */
+const RLS_DENIED = "42501";
+
 function logFailure(step: string, error: unknown): void {
   // failure was previously invisible (bare `return null`, no logging at
   // all), which is exactly why the org bootstrap silently never worked for
@@ -22,31 +25,78 @@ function newOrgId(): string {
   return `org-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** PostgREST: the function is not in the schema (a database not yet migrated). */
+const RPC_NOT_FOUND = "PGRST202";
+
+export type TeamRole = "owner" | "admin" | "member" | "viewer";
+
+/** The team this browser is working in, as the database resolved it. */
+export interface ActiveTeam {
+  id: string;
+  name: string;
+  isPersonal: boolean;
+  role: TeamRole;
+}
+
+let lastActiveTeam: { userId: string; team: ActiveTeam } | null = null;
+
 /**
- * Every browser session gets exactly one org, created on first use and
- * reused after (an org row plus a self-join membership row, both allowed by
- * RLS: "authenticated users can create an org" / "creator can self-join
- * their new org as owner"). Not exposed as a concept anywhere in the UI --
- * this is purely the join-key RLS requires to scope everything else.
+ * Asks the database which team the user is working in: the one they chose in
+ * the team switcher while they still belong to it, otherwise their personal
+ * team (created on first use). One call, decided server-side, so Edge
+ * Functions -- which resolve the caller's team the same way -- always agree
+ * with the browser.
+ *
+ * Returns `undefined` when the database has no such function yet, which is
+ * the signal to fall back to the legacy bootstrap below.
+ */
+async function resolveActiveTeamRpc(
+  userId: string,
+): Promise<ActiveTeam | null | undefined> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("resolve_active_team");
+  if (error) {
+    if (error.code === RPC_NOT_FOUND) return undefined;
+    logFailure("resolve_active_team", error);
+    return null;
+  }
+  const row = data as {
+    id?: string;
+    name?: string;
+    is_personal?: boolean;
+    role?: TeamRole;
+  } | null;
+  if (!row?.id) return null;
+  const team: ActiveTeam = {
+    id: row.id,
+    name: row.name ?? PERSONAL_ORG_NAME,
+    isPersonal: row.is_personal ?? false,
+    role: row.role ?? "member",
+  };
+  lastActiveTeam = { userId, team };
+  return team;
+}
+
+/**
+ * Legacy bootstrap, used only against a database that predates
+ * `resolve_active_team`: one org per browser session, created on first use
+ * and reused after (an org row plus a self-join membership row, both allowed
+ * by RLS).
  *
  * The org id is generated CLIENT-SIDE and inserted without `.select()`
  * deliberately: `orgs`' SELECT policy is `is_org_member(id)`, which can't be
  * satisfied until the `org_members` self-join row below exists. Chaining
  * `.select().single()` onto the insert makes Postgres enforce that SELECT
  * policy against the INSERT's own RETURNING clause as part of the same
- * statement -- a real, verified 42501 on every attempt, not a hypothetical
- * edge case (confirmed against the live project: this was the entire reason
- * the org bootstrap has never worked for any user). No RETURNING needed
- * anyway, since the id is already known.
+ * statement -- a real, verified 42501 on every attempt.
  */
-async function resolvePersonalOrg(userId: string): Promise<string | null> {
+async function resolvePersonalOrgLegacy(
+  userId: string,
+): Promise<string | null> {
   if (!supabase) return null;
 
   // Ordered, not just `.limit(1)`: a browser that already ended up in more
-  // than one org (two tabs bootstrapping at once, before the single-flight
-  // below existed) must resolve to the SAME org on every subsequent call.
-  // An unordered limit lets Postgres pick either row, which silently splits
-  // that user's workspaces and repositories across two orgs.
+  // than one org must resolve to the SAME org on every subsequent call.
   const { data: membership, error: membershipError } = await supabase
     .from("org_members")
     .select("org_id")
@@ -54,7 +104,12 @@ async function resolvePersonalOrg(userId: string): Promise<string | null> {
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  if (membershipError) logFailure("org_members lookup", membershipError);
+  if (membershipError) {
+    // A failed lookup is not "no org yet". Creating one here is exactly how
+    // some accounts ended up owning a new "Personal" org every few days.
+    logFailure("org_members lookup", membershipError);
+    return null;
+  }
   if (membership?.org_id) return membership.org_id as string;
 
   const orgId = newOrgId();
@@ -78,6 +133,12 @@ async function resolvePersonalOrg(userId: string): Promise<string | null> {
   }
 
   return orgId;
+}
+
+async function resolvePersonalOrg(userId: string): Promise<string | null> {
+  const team = await resolveActiveTeamRpc(userId);
+  if (team === undefined) return resolvePersonalOrgLegacy(userId);
+  return team?.id ?? null;
 }
 
 /**
@@ -112,6 +173,34 @@ async function ensurePersonalOrg(userId: string): Promise<string | null> {
 /** Test seam -- drops any in-flight org bootstrap so the next call re-queries. */
 export function resetPersonalOrgBootstrap(): void {
   inFlightOrg = null;
+  lastActiveTeam = null;
+}
+
+/**
+ * The team this browser is working in, with the caller's role in it. Null
+ * when Supabase is not configured, there is no session, or the lookup failed.
+ */
+export async function resolveActiveTeam(): Promise<ActiveTeam | null> {
+  if (!isSupabaseConfigured || !supabase) return null;
+  try {
+    const userId = await ensureSupabaseSession();
+    if (!userId) return null;
+    const orgId = await ensurePersonalOrg(userId);
+    if (!orgId) return null;
+    if (lastActiveTeam?.userId === userId && lastActiveTeam.team.id === orgId) {
+      return lastActiveTeam.team;
+    }
+    // Legacy database: the id is all there is to know.
+    return {
+      id: orgId,
+      name: PERSONAL_ORG_NAME,
+      isPersonal: true,
+      role: "owner",
+    };
+  } catch (error) {
+    logFailure("resolveActiveTeam", error);
+    return null;
+  }
 }
 
 /**
@@ -274,11 +363,20 @@ async function ensureWorkspaceMembership(
   const { error } = await supabase
     .from("workspace_members")
     .insert({ workspace_id: workspaceId, user_id: userId, role: "owner" });
-  if (error && error.code !== "23505") {
-    logFailure("workspace_members insert", error);
-    return false;
+  if (!error || error.code === "23505") return true;
+
+  // Refused: the workspace belongs to a teammate. That is not a failure --
+  // a team's workspaces are reachable through team membership alone, with no
+  // row here -- so ask the database whether this user can reach it.
+  if (error.code === RLS_DENIED) {
+    const { data: reachable, error: accessError } = await supabase.rpc(
+      "is_workspace_member",
+      { ws_id: workspaceId },
+    );
+    if (!accessError && reachable === true) return true;
   }
-  return true;
+  logFailure("workspace_members insert", error);
+  return false;
 }
 
 /** `localPath` disambiguates two different local folders sharing a

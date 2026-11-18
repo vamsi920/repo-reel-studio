@@ -145,3 +145,19 @@ export const CONFIG_CACHE_OPTIONS = {
 } as const;
 
 export type QueryKeys = (typeof QUERY_KEYS)[keyof typeof QUERY_KEYS];
+
+/** Team and workspace management (`src/hooks/query/use-teams.ts`). */
+export const TEAM_QUERY_KEYS = {
+  all: ["teams"] as const,
+  active: () => ["teams", "active"] as const,
+  mine: () => ["teams", "mine"] as const,
+  myInvites: () => ["teams", "my-invites"] as const,
+  invitePreview: (token: string) => ["teams", "invite-preview", token] as const,
+  members: (teamId?: string) => ["teams", "members", teamId ?? null] as const,
+  invites: (teamId?: string) => ["teams", "invites", teamId ?? null] as const,
+  workspaces: (teamId?: string) =>
+    ["teams", "workspaces", teamId ?? null] as const,
+  workspaceMembers: (workspaceId?: string) =>
+    ["teams", "workspace-members", workspaceId ?? null] as const,
+  audit: (teamId?: string) => ["teams", "audit", teamId ?? null] as const,
+} as const;

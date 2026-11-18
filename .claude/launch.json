@@ -127,6 +127,15 @@
         "dev"
       ],
       "port": 8010
+    },
+    {
+      "name": "ui-login",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "VITE_BACKEND_HOST=127.0.0.1:18000 VITE_SESSION_API_KEY=\"$(cat ~/.openhands/agent-canvas/api-key.txt 2>/dev/null)\" exec npx vite --port 3032 --strictPort"
+      ],
+      "port": 3032
     }
   ]
 }

@@ -1,27 +1,54 @@
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
 /**
- * Resolves the caller's org. Mirrors `ensurePersonalOrg` on the client
- * (`src/lib/data-platform/repositories/repository-identity.ts`): oldest
- * membership wins, which is the personal org for anyone who has not been
- * invited elsewhere.
+ * Resolves the team the caller is working in. Mirrors `resolve_active_team`
+ * in the database (the function the browser calls): the team the user chose
+ * in the team switcher while it is still a live team they belong to,
+ * otherwise their personal team. Both sides read the same
+ * `user_team_preferences` row, so a connection saved from the browser lands
+ * in the team the browser is showing.
  */
 export async function getCallerOrgId(
   admin: SupabaseClient,
   userId: string,
 ): Promise<string | null> {
-  const { data, error } = await admin
+  const { data: memberships, error } = await admin
     .from("org_members")
-    .select("org_id, created_at")
+    .select("org_id, created_at, orgs!inner(is_personal, archived_at)")
     .eq("user_id", userId)
-    .order("created_at", { ascending: true })
-    .limit(1)
+    .order("created_at", { ascending: true });
+  if (error || !memberships) return null;
+
+  type Membership = {
+    org_id: string;
+    orgs:
+      | { is_personal: boolean; archived_at: string | null }
+      | { is_personal: boolean; archived_at: string | null }[];
+  };
+  const live = (memberships as Membership[])
+    .map((row) => ({
+      orgId: row.org_id,
+      org: Array.isArray(row.orgs) ? row.orgs[0] : row.orgs,
+    }))
+    .filter((row) => row.org && !row.org.archived_at);
+  if (live.length === 0) return null;
+
+  const { data: preference } = await admin
+    .from("user_team_preferences")
+    .select("active_org_id")
+    .eq("user_id", userId)
     .maybeSingle();
-  if (error || !data) return null;
-  return data.org_id as string;
+  const chosen = preference?.active_org_id as string | null | undefined;
+  if (chosen && live.some((row) => row.orgId === chosen)) return chosen;
+
+  // No (valid) choice: the personal team, or the oldest membership for an
+  // account that somehow has none.
+  return (live.find((row) => row.org.is_personal) ?? live[0]).orgId;
 }
 
+// `viewer` is a read-only seat: it ranks below every role a write asks for.
 const ROLE_RANK: Record<string, number> = {
+  viewer: 0,
   member: 1,
   admin: 2,
   owner: 3,

@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   isSupabaseConfigured: true,
   upserted: [] as Record<string, unknown>[],
-  upsertError: null as { message: string } | null,
+  upsertError: null as { message: string; code?: string } | null,
+  renamed: [] as Record<string, unknown>[],
   selectData: null as Record<string, unknown>[] | null,
   selectError: null as { message: string } | null,
 }));
@@ -14,10 +15,20 @@ vi.mock("#/lib/data-platform/client", () => ({
   },
   supabase: {
     from: () => ({
-      upsert: (row: Record<string, unknown>) => {
+      // A plain insert: an upsert's conflict branch is an UPDATE, which a
+      // teammate who did not register the workspace may not run.
+      insert: (row: Record<string, unknown>) => {
         state.upserted.push(row);
         return Promise.resolve({ error: state.upsertError });
       },
+      update: (row: Record<string, unknown>) => ({
+        eq: () => ({
+          is: async () => {
+            state.renamed.push(row);
+            return { error: null };
+          },
+        }),
+      }),
       select: () => ({
         eq: async () => ({ data: state.selectData, error: state.selectError }),
       }),
@@ -34,6 +45,7 @@ describe("workspaceRepository.ensureWorkspace", () => {
     state.isSupabaseConfigured = true;
     state.upserted = [];
     state.upsertError = null;
+    state.renamed = [];
   });
 
   afterEach(() => {
@@ -81,6 +93,22 @@ describe("workspaceRepository.ensureWorkspace", () => {
       name: "My Project",
     });
     expect(state.upserted[0]).toMatchObject({ name: "My Project" });
+  });
+
+  it("treats a workspace someone already registered as success, and only fills in a missing name", async () => {
+    state.upsertError = { code: "23505", message: "duplicate key value" };
+
+    await expect(
+      workspaceRepository.ensureWorkspace({
+        id: "ws-1",
+        orgId: "org-other-team",
+        backendId: "backend-1",
+        path: "/tmp/project",
+        name: "My Project",
+      }),
+    ).resolves.toEqual({ ok: true });
+    // The follow-up never carries a team: a workspace stays where it was made.
+    expect(state.renamed).toEqual([{ name: "My Project" }]);
   });
 
   it("returns ok:false with the error message when the upsert fails", async () => {

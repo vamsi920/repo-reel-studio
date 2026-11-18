@@ -59,6 +59,7 @@ import {
 } from "#/themes/color-themes";
 import { isSupabaseConfigured } from "#/lib/data-platform/client";
 import { useSupabaseSession } from "#/hooks/query/use-supabase-session";
+import { rememberPostLoginPath } from "#/lib/teams/invites";
 import { useApplyAppearance } from "#/hooks/use-appearance";
 
 /**
@@ -440,8 +441,12 @@ export default function App() {
     (supabaseSessionStatus === "none" || supabaseSessionStatus === "anonymous");
 
   React.useEffect(() => {
-    if (supabaseSessionMissing) navigate("/login", { replace: true });
-  }, [supabaseSessionMissing, navigate]);
+    if (!supabaseSessionMissing) return;
+    // Someone following an invitation link before signing in comes back to
+    // it afterwards instead of landing on the home screen.
+    rememberPostLoginPath(location.pathname);
+    navigate("/login", { replace: true });
+  }, [supabaseSessionMissing, navigate, location.pathname]);
 
   // Skip the /server_info probe entirely when we already know auth is
   // required and missing — it would just 401 and waste time. Also keep the

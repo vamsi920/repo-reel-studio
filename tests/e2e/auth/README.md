@@ -32,6 +32,15 @@ agent (or you, repeatedly) doing it by hand.
    ```
    or `npm run test:e2e:auth` (reads the same file).
 
+`team-management.spec.ts` drives two people at once (an owner and the teammate
+they invite), so it also needs a second dedicated test account:
+```
+E2E_TEAMMATE_EMAIL=<second test account email>
+E2E_TEAMMATE_PASSWORD=<second test account password>
+```
+It is skipped when those are not set. It creates a team, invites the
+teammate, and deletes the team again; it never creates accounts.
+
 In CI, set the same three values as repo/environment secrets instead of a
 committed file -- the test only ever reads them from `process.env`.
 
