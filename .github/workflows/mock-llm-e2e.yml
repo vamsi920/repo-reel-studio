@@ -91,6 +91,7 @@ jobs:
           echo "agent_server_version=$(node -p "require('./config/defaults.json').versions.agentServer")" >> "$GITHUB_OUTPUT"
           echo "automation_version=$(node -p "require('./config/defaults.json').versions.automation")" >> "$GITHUB_OUTPUT"
           echo "acp_constraint=$(node -p "require('./config/defaults.json').constraints.agentClientProtocol")" >> "$GITHUB_OUTPUT"
+          echo "fastapi_constraint=$(node -p "require('./config/defaults.json').constraints.fastapi")" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -142,12 +143,17 @@ jobs:
       - name: Pre-warm automation backend (uvx cache)
         env:
           AUTOMATION_VERSION: ${{ steps.defaults.outputs.automation_version }}
+          ACP_CONSTRAINT: ${{ steps.defaults.outputs.acp_constraint }}
+          FASTAPI_CONSTRAINT: ${{ steps.defaults.outputs.fastapi_constraint }}
         run: |
           # Pre-install openhands-automation into the uvx cache so the
           # agent-canvas binary doesn't need to download it at startup.
           # Without this, the 180s Playwright webServer timeout expires
           # before the automation backend finishes installing (~60-90s).
-          uvx --from "openhands-automation==$AUTOMATION_VERSION" python -c "from openhands.automation.app import app; print('automation package cached')"
+          # Same pins as scripts/dev-with-automation.mjs, so this warms the
+          # exact environment the stack starts (and does not break when
+          # agent-client-protocol ships an incompatible release).
+          uvx --from "openhands-automation==$AUTOMATION_VERSION" --with "$ACP_CONSTRAINT" --with "$FASTAPI_CONSTRAINT" python -c "from openhands.automation.app import app; print('automation package cached')"
 
       - name: Verify mock LLM server starts
         run: |

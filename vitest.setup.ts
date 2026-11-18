@@ -24,31 +24,75 @@ const windowStub =
 vi.stubGlobal("window", windowStub);
 windowStub.scrollTo = vi.fn();
 
-// Node.js 25+ ships a built-in localStorage that requires --localstorage-file
-// and is not functional without it. Stub it with a plain in-memory
-// implementation so zustand's persist middleware works in tests.
-if (
-  typeof localStorage === "undefined" ||
-  typeof localStorage.setItem !== "function"
-) {
-  const store: Record<string, string> = {};
-  vi.stubGlobal("localStorage", {
-    getItem: (key: string) => store[key] ?? null,
+// Node.js 25+ ships built-in localStorage/sessionStorage globals that need
+// --localstorage-file and are not functional without it, and they shadow the
+// test DOM's own storage. Replace a non-functional one with an in-memory
+// Storage. Defined as a plain property, not `vi.stubGlobal`: a test that calls
+// `vi.unstubAllGlobals()` would otherwise put Node's broken one back mid-file.
+function createMemoryStorage(): Storage {
+  const store = new Map<string, string>();
+  const api: Storage = {
+    getItem: (key: string) => store.get(String(key)) ?? null,
     setItem: (key: string, value: string) => {
-      store[key] = String(value);
+      store.set(String(key), String(value));
     },
     removeItem: (key: string) => {
-      delete store[key];
+      store.delete(String(key));
     },
-    clear: () => {
-      Object.keys(store).forEach((k) => delete store[k]);
-    },
+    clear: () => store.clear(),
     get length() {
-      return Object.keys(store).length;
+      return store.size;
     },
-    key: (index: number) => Object.keys(store)[index] ?? null,
+    key: (index: number) => Array.from(store.keys())[index] ?? null,
+  };
+  // Like a browser's Storage, stored keys are its own enumerable properties,
+  // so `Object.keys(localStorage)` lists them.
+  return new Proxy(api, {
+    get: (target, prop, receiver) =>
+      typeof prop === "string" && !(prop in target) && store.has(prop)
+        ? store.get(prop)
+        : Reflect.get(target, prop, receiver),
+    ownKeys: () => Array.from(store.keys()),
+    getOwnPropertyDescriptor: (_target, prop) =>
+      typeof prop === "string" && store.has(prop)
+        ? {
+            value: store.get(prop),
+            writable: true,
+            enumerable: true,
+            configurable: true,
+          }
+        : undefined,
   });
 }
+
+function isUsableStorage(storage: unknown): boolean {
+  try {
+    return (
+      typeof storage === "object" &&
+      storage !== null &&
+      typeof (storage as Storage).setItem === "function" &&
+      typeof (storage as Storage).clear === "function"
+    );
+  } catch {
+    return false;
+  }
+}
+
+(["localStorage", "sessionStorage"] as const).forEach((name) => {
+  let current: unknown;
+  try {
+    current = (globalThis as Record<string, unknown>)[name];
+  } catch {
+    current = undefined;
+  }
+  if (isUsableStorage(current)) return;
+  const memory = createMemoryStorage();
+  Object.defineProperty(globalThis, name, {
+    configurable: true,
+    enumerable: true,
+    get: () => memory,
+  });
+});
 
 if (typeof requestAnimationFrame === "undefined") {
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) =>

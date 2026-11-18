@@ -87,14 +87,25 @@ describe("mock-LLM E2E affected test resolver", () => {
     expect(workflow).not.toContain("2>&1) || true");
   });
 
+  /** The `on.pull_request` block of a workflow, up to the next trigger. */
+  function pullRequestTrigger(workflow: string): string {
+    const start = workflow.indexOf("\n  pull_request:");
+    expect(start).toBeGreaterThan(-1);
+    const rest = workflow.slice(start + 1);
+    const next = rest.slice(1).search(/\n {2}[a-z_]+:|\n[a-z]/);
+    return next === -1 ? rest : rest.slice(0, next + 1);
+  }
+
   it("keeps E2E workflows from path-skipping required PR checks", () => {
     const workflow = readFileSync(workflowPath, "utf-8");
     const dockerWorkflow = readFileSync(dockerWorkflowPath, "utf-8");
 
-    expect(workflow).not.toContain("\n    paths:\n");
+    // Only the pull_request trigger matters: a path-skipped PR run leaves a
+    // required check pending. The push-to-main trigger may filter by path.
+    expect(pullRequestTrigger(workflow)).not.toContain("paths:");
     expect(workflow).toContain("detect-pr-changes:");
     expect(workflow).toContain("needs.detect-pr-changes.outputs.should_run");
-    expect(dockerWorkflow).not.toContain("\n    paths:\n");
+    expect(pullRequestTrigger(dockerWorkflow)).not.toContain("paths:");
     expect(dockerWorkflow).toContain("detect-pr-changes:");
     expect(dockerWorkflow).toContain(
       "needs.detect-pr-changes.outputs.should_run",

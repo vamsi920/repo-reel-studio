@@ -332,6 +332,22 @@ export const AUTOMATION_TIMING_ENV = {
   AUTOMATION_DISPATCHER_INTERVAL_SECONDS: "2",
 };
 
+/**
+ * Transitive-dependency pins for the automation service. It imports
+ * openhands-sdk, so it breaks on the same upstream releases the agent-server
+ * does (see `constraints` in config/defaults.json): agent-client-protocol 1.0
+ * (2026-11-09) dropped `acp.helpers`, and every fresh uvx resolve of the
+ * automation package then failed on import before serving a request.
+ */
+export const AUTOMATION_DEPENDENCY_CONSTRAINTS = [
+  SHARED_DEFAULTS.constraints?.agentClientProtocol,
+  SHARED_DEFAULTS.constraints?.fastapi,
+].filter(Boolean);
+
+function constraintArgs() {
+  return AUTOMATION_DEPENDENCY_CONSTRAINTS.flatMap((spec) => ["--with", spec]);
+}
+
 function buildAutomationCommand(env = process.env) {
   const gitRef = env.OH_AUTOMATION_GIT_REF;
   const version = env.OH_AUTOMATION_VERSION;
@@ -343,13 +359,20 @@ function buildAutomationCommand(env = process.env) {
   if (gitRef) {
     // Use git ref - refresh to ensure latest commit is fetched
     const gitUrl = `git+${repoUrl}@${gitRef}`;
-    uvxArgs.push("--refresh", "--from", gitUrl, ...AUTOMATION_SERVER_ENTRY);
+    uvxArgs.push(
+      "--refresh",
+      "--from",
+      gitUrl,
+      ...constraintArgs(),
+      ...AUTOMATION_SERVER_ENTRY,
+    );
     source = `git (${gitRef})`;
   } else if (version) {
     // Use specific PyPI version
     uvxArgs.push(
       "--from",
       `${DEFAULT_AUTOMATION_PACKAGE}==${version}`,
+      ...constraintArgs(),
       ...AUTOMATION_SERVER_ENTRY,
     );
     source = `PyPI (${version})`;
@@ -358,6 +381,7 @@ function buildAutomationCommand(env = process.env) {
     uvxArgs.push(
       "--from",
       `${DEFAULT_AUTOMATION_PACKAGE}==${DEFAULT_AUTOMATION_VERSION}`,
+      ...constraintArgs(),
       ...AUTOMATION_SERVER_ENTRY,
     );
     source = `PyPI (${DEFAULT_AUTOMATION_VERSION}, default)`;

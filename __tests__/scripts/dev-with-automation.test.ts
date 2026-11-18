@@ -34,6 +34,7 @@ import {
   getAutomationWebhookSecret,
 } from "../../scripts/dev-with-automation.mjs";
 import { resetPersistedSessionApiKeyCache } from "../../scripts/dev-safe.mjs";
+import defaults from "../../config/defaults.json";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -55,6 +56,26 @@ describe("buildAutomationCommand", () => {
     expect(cmd.args.at(-1)).toContain("POLL_INTERVAL_SECONDS");
     expect(cmd.args.at(-1)).toContain("openhands.automation.app:app");
     expect(cmd.source).toBe(`PyPI (${DEFAULT_AUTOMATION_VERSION}, default)`);
+  });
+
+  it.each([
+    [{}],
+    [{ OH_AUTOMATION_VERSION: "1.2.3" }],
+    [{ OH_AUTOMATION_GIT_REF: "main" }],
+  ])("pins the SDK's broken transitive releases (%j)", (env) => {
+    const { args } = buildAutomationCommand(env);
+    const entry = args.indexOf("python");
+
+    // agent-client-protocol 1.0 removed `acp.helpers`, which the SDK imports.
+    for (const spec of [
+      defaults.constraints.agentClientProtocol,
+      defaults.constraints.fastapi,
+    ]) {
+      const at = args.indexOf(spec);
+      expect(at).toBeGreaterThan(0);
+      expect(args[at - 1]).toBe("--with");
+      expect(at).toBeLessThan(entry);
+    }
   });
 
   it("uses custom git ref from OH_AUTOMATION_GIT_REF", () => {
@@ -882,7 +903,11 @@ describe("dev-with-automation CLI", () => {
 
 describe("service restart policy", () => {
   it("backs off exponentially, gives up, and resets after a healthy run", () => {
-    const restart = { maxAttempts: 3, baseDelayMs: 1_000, healthyAfterMs: 60_000 };
+    const restart = {
+      maxAttempts: 3,
+      baseDelayMs: 1_000,
+      healthyAfterMs: 60_000,
+    };
 
     expect(nextRestartDelayMs(undefined, 0, 0)).toBeNull();
     expect([0, 1, 2].map((a) => nextRestartDelayMs(restart, a, 500))).toEqual([
