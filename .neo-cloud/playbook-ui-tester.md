@@ -15,6 +15,19 @@ the two fixer routines — file into `TODO.txt` (root-level file at repo root
 outside `.neo-cloud/`, git-tracked in cloud unlike the local git-ignored copy)
 for the hourly code-fixer to pick up.
 
+## Fixture repo: `vamsi920/neo-qa-fixture`
+
+`main` keeps five planted bugs on purpose (issues labelled `qa-planted`: #7,
+#11, #12, #15, #17), tagged `qa-baseline`. Never merge an agent's fix into
+`main` and never close a `qa-planted` issue as fixed. The answer key, hidden
+tests and scripts live on the `qa/solutions` branch (`QA.md`):
+
+- grade an agent's branch: `git checkout qa/solutions && qa/grade.sh <branch>`
+  (prints `QA-<n> fixed` / `not fixed`; fails if the branch broke its own tests);
+- clean up after the run: `qa/reset.sh --apply` (closes `neodevex/*` PRs,
+  deletes their branches, reopens planted issues; `--reset-main` only if
+  `main` moved off `qa-baseline`).
+
 ## Step 0. Incident check
 
 Read `.neo-cloud/incidents.md`. Per `OPEN` row: cheap liveness check (one page
