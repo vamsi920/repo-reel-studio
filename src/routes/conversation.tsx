@@ -28,6 +28,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { resumeCloudSandbox } from "#/api/cloud/conversation-service.api";
 import { useMemoryObserver } from "#/hooks/use-memory-observer";
 import { useMemoryUpdater } from "#/hooks/use-memory-updater";
+import { useNeoBrain } from "#/hooks/use-neo-brain";
 import { useKtWorkspaceSync } from "#/hooks/use-kt-workspace-sync";
 import { useTrackRealUsage } from "#/hooks/use-track-real-usage";
 import { useSupabaseIdentity } from "#/hooks/use-supabase-identity";
@@ -69,6 +70,7 @@ function AppContent() {
   const workspaceId = useWorkspaceId();
   useMemoryObserver();
   useMemoryUpdater();
+  useNeoBrain();
   useKtWorkspaceSync();
   useTrackRealUsage();
   useSupabaseIdentity();

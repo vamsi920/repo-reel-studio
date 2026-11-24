@@ -4,6 +4,8 @@ import useMetricsStore from "#/stores/metrics-store";
 import useWorkspaceMemoryStore from "#/stores/workspace-memory-store";
 import { WorkspaceContextService } from "#/lib/workspace-memory";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
+import { useNeoBrainStore } from "#/stores/neo-brain-store";
+import { brainMapPointer } from "#/lib/neo-brain/brain-map";
 import {
   buildKtPagePointers,
   findKnowledgeForConversation,
@@ -44,6 +46,9 @@ export function useWorkspaceMemoryContext() {
     (state) => state.byRepositoryId,
   );
   const recordSavings = useWorkspaceMemoryStore((state) => state.recordSavings);
+  const brainMapWritten = useNeoBrainStore((state) =>
+    workspaceId ? Boolean(state.lastMapFingerprint[workspaceId]) : false,
+  );
 
   return useCallback(
     (task: string): string => {
@@ -85,10 +90,14 @@ export function useWorkspaceMemoryContext() {
         task,
       );
 
-      if (!context.text) return ktPointers;
+      const pointers = [ktPointers, brainMapWritten ? brainMapPointer() : ""]
+        .filter(Boolean)
+        .join("\n\n");
+
+      if (!context.text) return pointers;
 
       recordSavings(context.sample);
-      return ktPointers ? `${context.text}\n\n${ktPointers}` : context.text;
+      return pointers ? `${context.text}\n\n${pointers}` : context.text;
     },
     [
       workspaceId,
@@ -97,6 +106,7 @@ export function useWorkspaceMemoryContext() {
       settings?.llm_model,
       knowledgeByRepository,
       recordSavings,
+      brainMapWritten,
     ],
   );
 }

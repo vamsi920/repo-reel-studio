@@ -17,6 +17,8 @@ const IDENTICAL_VALUE_ALLOWLIST = new Set([
   "TEAM$INVITE_EMAILS_PLACEHOLDER",
   // Neo ME: the product name, a brand-name format string, and prompts that
   // are sent to the model rather than shown to people.
+  // Neo Brain: the product name.
+  "NEO_BRAIN$TITLE",
   "SIDEBAR$NEOME",
   "NEOME$TITLE",
   "NEOME$STUDIO_CONVERSATION_TITLE",

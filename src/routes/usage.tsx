@@ -15,6 +15,7 @@ import {
   WorkspaceActivityFeed,
 } from "#/components/features/usage/usage-tabs";
 import { UsageSection } from "#/components/features/usage/usage-stat";
+import { NeoBrainPanel } from "#/components/features/neo-brain/neo-brain-panel";
 import {
   UsageWorkspaceSelect,
   useUsageWorkspaceOptions,
@@ -28,6 +29,7 @@ const TABS = [
   "Costs",
   "Savings",
   "Memory Health",
+  "Brain",
 ] as const;
 
 type Tab = (typeof TABS)[number];
@@ -141,6 +143,9 @@ export default function UsageRoute() {
       {tab === "Savings" ? <UsageSavingsTab data={data} /> : null}
       {tab === "Memory Health" ? (
         <MemoryHealthTab data={data} workspaceLabels={labelByWorkspaceId} />
+      ) : null}
+      {tab === "Brain" ? (
+        <NeoBrainPanel workspaceId={data.workspaceId} />
       ) : null}
 
       <UsageSection

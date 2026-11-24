@@ -22,7 +22,12 @@ interface BashObservationLike {
 
 function asBashObservation(event: OpenHandsEvent): BashObservationLike | null {
   const candidate = event as BashObservationLike;
-  if (candidate.observation?.kind !== "ExecuteBashObservation") return null;
+  // The SDK's `terminal` tool reports `TerminalObservation`; older servers
+  // still send `ExecuteBashObservation`. Both carry command + exit code.
+  const kind = candidate.observation?.kind;
+  if (kind !== "ExecuteBashObservation" && kind !== "TerminalObservation") {
+    return null;
+  }
   return candidate;
 }
 

@@ -71,6 +71,8 @@ import {
   routeConversationStart,
 } from "#/lib/model-routing/start";
 import { resolveTitleLlmProfile } from "#/utils/title-llm-profile";
+import { computeWorkspaceId } from "#/lib/workspace-memory/workspace-id";
+import { buildStartBrainContext } from "#/services/neo-brain";
 import type {
   GetHooksResponse,
   HookEvent as LocalHookEvent,
@@ -557,12 +559,33 @@ class AgentServerConversationService {
     const resolvedWorkspaceMode =
       workspaceMode ?? (workingDirOverride ? "local_repo" : "new_worktree");
 
+    // Neo Brain: what this project has already learned. A system-prompt
+    // suffix normally; agent-profile launches drop the suffix, so there it
+    // rides above the first message inside the (UI-hidden) memory markers.
+    const brainContext = buildStartBrainContext({
+      workspaceId: computeWorkspaceId(
+        getActiveBackend().backend.id,
+        workingDir,
+      ),
+      task: initialUserMsg,
+      repositoryId: metadata?.selected_repository ?? null,
+    });
+    const brainInMessage = Boolean(brainContext && agentProfileId);
+    const startQuery =
+      brainInMessage && initialUserMsg
+        ? `${brainContext}\n\n${initialUserMsg}`
+        : initialUserMsg;
+    const startSuffix =
+      brainContext && !brainInMessage
+        ? [extraSystemSuffix, brainContext].filter(Boolean).join("\n\n")
+        : extraSystemSuffix;
+
     // Use encrypted settings to avoid exposing secrets in the browser
     const payload = await buildStartConversationRequestWithEncryptedSettings({
       settings,
-      query: initialUserMsg,
+      query: startQuery,
       conversationInstructions,
-      extraSystemSuffix,
+      extraSystemSuffix: startSuffix,
       studioTool,
       plugins,
       conversationId,
