@@ -45,7 +45,7 @@ import { LoadingSpinner } from "#/components/shared/loading-spinner";
 import { useConfig } from "#/hooks/query/use-config";
 import { QUERY_KEYS } from "#/hooks/query/query-keys";
 import { AgentServerUIRoot } from "#/components/providers";
-import { TelemetryConsentBanner } from "#/components/features/analytics/telemetry-consent-banner";
+import { DefaultTelemetryConsent } from "#/components/features/analytics/default-telemetry-consent";
 import { buildAgentCanvasPath } from "#/utils/base-path";
 import { isDesktopApp } from "#/utils/utils";
 import { useOnboardingCompletion } from "#/components/features/onboarding/use-onboarding-completion";
@@ -495,7 +495,7 @@ export default function App() {
     return (
       <>
         <FirstRunOnboardingScreen onClose={markCompleted} />
-        <TelemetryConsentBanner />
+        <DefaultTelemetryConsent />
       </>
     );
   }
@@ -529,7 +529,7 @@ export default function App() {
   return (
     <>
       <Outlet />
-      <TelemetryConsentBanner />
+      <DefaultTelemetryConsent />
     </>
   );
 }

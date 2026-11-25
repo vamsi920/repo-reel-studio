@@ -28,6 +28,7 @@ import { TutorialHost } from "#/components/features/tutorial";
 import { ConnectionSyncSentinel } from "#/components/features/environment/connection-sync-sentinel";
 import { useConversationArchiveSync } from "#/hooks/use-conversation-archive-sync";
 import { useLlmProfileSync } from "#/hooks/use-llm-profile-sync";
+import { useGithubSelfHeal } from "#/hooks/use-github-self-heal";
 
 const EnvironmentSwitchOverlay = React.lazy(
   () => import("#/components/features/backends/environment-switch-overlay"),
@@ -110,6 +111,7 @@ export default function MainApp() {
   useConversationArchiveSync();
   // Saved LLM profiles (keys encrypted in the user vault) follow the user.
   useLlmProfileSync();
+  useGithubSelfHeal();
 
   React.useEffect(() => {
     if (settings?.language) {

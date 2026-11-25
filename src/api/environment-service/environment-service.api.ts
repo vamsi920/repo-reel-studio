@@ -1,4 +1,8 @@
 import { supabase, isSupabaseConfigured } from "#/lib/data-platform/client";
+import {
+  isGithubProvider,
+  startGithubOAuth,
+} from "#/services/github-reconnect";
 import type { Capability } from "#/lib/environment/types/capability";
 import type {
   ConnectionReceipt,
@@ -121,6 +125,17 @@ export interface SetCredentialsInput {
 export const EnvironmentService = {
   async startOAuth(input: StartOAuthInput): Promise<{ authorizeUrl: string }> {
     const returnTo = resolveOAuthReturnPath(input.returnTo);
+    // GitHub goes through the flow that works end to end; the generic flow
+    // used to mint a token GitHub then refused to hand over, burning one of
+    // the user's 10 token slots per click (see services/github-reconnect.ts).
+    if (isGithubProvider(input.providerId)) {
+      const result = await startGithubOAuth({
+        enterpriseHost: input.config?.enterpriseHost ?? null,
+        returnTo,
+      });
+      markOAuthPending(input.providerId);
+      return result;
+    }
     const result = await invoke<{ authorizeUrl: string }>(
       "connections-oauth-start",
       {

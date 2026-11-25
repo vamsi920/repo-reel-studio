@@ -137,6 +137,7 @@ export async function completeConnectionsOAuth(
     clientIdEnv: string;
     clientSecretEnv: string;
     refreshable: boolean;
+    callbackFunction?: string;
     identity?: { pathTemplate: string; idPointer: string; namePointer: string };
   };
 
@@ -178,7 +179,12 @@ export async function completeConnectionsOAuth(
       client_secret: clientSecret,
       code,
       code_verifier: stateRow.code_verifier,
-      redirect_uri: `${supabaseUrl}/functions/v1/connections-oauth-callback`,
+      // Must equal the authorize step's redirect_uri (connections-oauth-start
+      // uses the manifest's callbackFunction). GitHub refuses a mismatch with
+      // a 200 and no token, after it has already minted one.
+      redirect_uri: `${supabaseUrl}/functions/v1/${
+        oauth.callbackFunction ?? "connections-oauth-callback"
+      }`,
     }),
   });
 
