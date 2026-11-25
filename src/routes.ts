@@ -65,6 +65,8 @@ export default [
       route("synth/:projectId", "routes/synth-project.tsx"),
       route("testing", "routes/testing.tsx"),
       route("testing/:projectId", "routes/testing-project.tsx"),
+      route("rag", "routes/rag.tsx"),
+      route("rag/:collectionId", "routes/rag-collection.tsx"),
       route("environment", "routes/environment.tsx", [
         index("routes/environment-overview.tsx"),
         route("connections", "routes/environment-connections.tsx"),

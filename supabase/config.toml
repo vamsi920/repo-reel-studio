@@ -40,3 +40,10 @@ verify_jwt = false
 # locked out. Domain-restricted and rate-limited by intent, not by a JWT.
 [functions.password-direct-reset]
 verify_jwt = false
+
+# Neo RAG authenticates every request itself: a Supabase session JWT from the
+# app, or an `nrag_` API key from scripts and from agents over MCP (which have
+# no Supabase session at all). With the gateway check on, API-key and MCP
+# calls would be rejected before the function runs.
+[functions.rag]
+verify_jwt = false

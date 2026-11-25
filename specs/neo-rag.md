@@ -1,7 +1,43 @@
-# Neo RAG — retrieval as a platform service (plan)
+# Neo RAG — retrieval as a platform service
 
-Status: **plan, not built.** Spec IDs are stable; never renumber. Tag code
-and tests with `// @spec RAG-0xx`.
+Status: **built (2026-11-25)** — see "What shipped" below; the rest of this
+page is the design it follows. Spec IDs are stable; never renumber. Tag
+code and tests with `// @spec RAG-0xx`.
+
+## What shipped
+
+- **Module** `/rag` (sidebar "RAG"): collections per team; a collection page
+  with Sources (add / re-sync / remove, per-document list, live progress),
+  Ask (answer with clickable citations or search only, re-rank and deep
+  search toggles, why-retrieved ranks and timings), Quality (golden
+  questions, recall@1/3/5 and MRR, run history) and Connect (API keys,
+  MCP URL, curl example, one-click "Connect to agents").
+- **Database** `supabase/migrations/20261124120000_neo_rag.sql` (applied):
+  `rag_collections`, `rag_sources`, `rag_documents`, `rag_chunks`
+  (`vector(1536)` HNSW + weighted `tsvector` GIN), `rag_api_keys` (no
+  browser policies), `rag_queries`, `rag_eval_cases`, `rag_eval_runs`; RLS
+  by `has_org_role`; `rag_hybrid_search` (RRF, service role only) and
+  `rag_collection_stats`.
+- **Service** Edge Function `rag` (`verify_jwt = false`, own auth: session
+  JWT or `nrag_` key): `ingest`, `finish_sync`, `search`, `answer`,
+  `list_collections`, `fetch_url` (SSRF-guarded, redirects re-checked),
+  `github_files` (tarball, the user's GitHub token for private repos, public
+  fallback), `create_key` / `list_keys` / `revoke_key`, and MCP over
+  streamable HTTP at `/rag/mcp` (`rag_search`, `rag_answer`,
+  `rag_list_collections`).
+- **Engine** `src/lib/rag/` (pure): `chunk.ts` (markdown by heading trail,
+  code by declaration with line ranges, prose by paragraph), `text.ts`
+  (content hash, secret redaction), `citations.ts`, `evaluate.ts`.
+- **Ingest** `src/services/rag-sync.ts`: sources upload, text, url, github,
+  kt (store or Supabase), memory (active workspace records); batches of 200
+  chunks; unchanged documents skipped by hash; complete listings prune.
+- **Agents** `src/services/rag-agents.ts`: registers `neo-rag` as an HTTP
+  MCP server with an `x-rag-key` header in the agent-server settings.
+
+Not built yet: Jira/Confluence/Slack/Drive connectors (RAG-009 phase 3),
+scheduled re-sync (RAG-005 runs on demand only), per-document ACLs beyond
+team membership (RAG-006), GraphRAG and the local-only fallback (RAG-012),
+switching KT Ask and Neo Brain onto the service.
 
 ## What RAG is, in one paragraph
 

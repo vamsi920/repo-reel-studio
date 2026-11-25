@@ -19,6 +19,11 @@ const IDENTICAL_VALUE_ALLOWLIST = new Set([
   // are sent to the model rather than shown to people.
   // Neo Brain: the product name.
   "NEO_BRAIN$TITLE",
+  "SIDEBAR$RAG",
+  "RAG$TITLE",
+  "RAG$URL_FIELD",
+  "RAG$KT_PLACEHOLDER",
+  "RAG$METRIC_MRR",
   "SIDEBAR$NEOME",
   "NEOME$TITLE",
   "NEOME$STUDIO_CONVERSATION_TITLE",

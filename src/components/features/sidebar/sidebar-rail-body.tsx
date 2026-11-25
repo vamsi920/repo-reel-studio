@@ -8,6 +8,7 @@ import {
   Settings,
   Activity,
   BookOpen,
+  Library,
   Gauge,
   PlugZap,
   ShieldCheck,
@@ -275,6 +276,14 @@ export function SidebarRailBody({
           testId="sidebar-kt-link"
           collapsed={collapsed}
           icon={<BookOpen width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
+          to="/rag"
+          label={t(I18nKey.SIDEBAR$RAG)}
+          testId="sidebar-rag-link"
+          collapsed={collapsed}
+          forceActive={currentPath.startsWith("/rag")}
+          icon={<Library width={ICON_SIZE} height={ICON_SIZE} />}
         />
         <SidebarNavLink
           to="/usage"
